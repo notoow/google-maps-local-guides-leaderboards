@@ -6,6 +6,9 @@
   <meta name="description" content="Join the Local Guides Leaderboard">
   <title>Join - Local Guides Leaderboard</title>
 
+  <!-- In-app Browser Redirect (must be first) -->
+  <script src="src/js/utils/inapp-redirect.js"></script>
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -382,6 +385,7 @@
         const guideData = {
           uid: currentUser.uid,
           email: currentUser.email,
+          avatarUrl: currentUser.photoURL || null,
           displayName: document.getElementById('displayName').value.trim(),
           mapsProfileUrl: document.getElementById('mapsProfileUrl').value.trim(),
           country: document.getElementById('country').value,

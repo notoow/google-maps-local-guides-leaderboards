@@ -10,13 +10,29 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { parseProfile } from './profile-parser.js';
 
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 // Firebase Admin 초기화
 function initFirebase() {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
+  let serviceAccount;
 
-  if (!serviceAccount.project_id) {
-    console.error('FIREBASE_SERVICE_ACCOUNT environment variable is not set');
-    process.exit(1);
+  // 환경변수 우선, 없으면 로컬 파일 사용
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } else {
+    try {
+      const filePath = join(__dirname, 'service-account.json');
+      serviceAccount = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      console.log('Using local service-account.json');
+    } catch (error) {
+      console.error('No service account found. Set FIREBASE_SERVICE_ACCOUNT env or provide service-account.json');
+      process.exit(1);
+    }
   }
 
   initializeApp({

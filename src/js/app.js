@@ -13,7 +13,8 @@ import {
   doc,
   getDoc,
   getDocs,
-  deleteDoc
+  deleteDoc,
+  updateDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { formatCompactNumber, formatWithCommas, getLevelBadgeClass, getRankBadgeClass } from './utils/format-number.js';
 
@@ -104,9 +105,15 @@ function initAuth() {
       isAdmin = await checkAdminStatus(user.uid);
       elements.adminBtn.hidden = !isAdmin;
 
-      // Check if user is already registered - hide Join button
-      const isRegistered = await checkRegistrationStatus(user.uid);
+      // Check if user is already registered - hide Join button and sync avatar
+      const guideDoc = await getGuideDoc(user.uid);
+      const isRegistered = !!guideDoc;
       elements.registerBtn.hidden = isRegistered;
+
+      // Sync avatar URL if user is registered and photoURL changed
+      if (isRegistered && user.photoURL && guideDoc.avatarUrl !== user.photoURL) {
+        syncAvatarUrl(user.uid, user.photoURL);
+      }
     } else {
       elements.loginBtn.hidden = false;
       elements.userMenu.hidden = true;
@@ -128,14 +135,24 @@ async function checkAdminStatus(uid) {
   }
 }
 
-async function checkRegistrationStatus(uid) {
+async function getGuideDoc(uid) {
   try {
     const guideRef = doc(db, 'guides', uid);
     const guideSnap = await getDoc(guideRef);
-    return guideSnap.exists();
+    return guideSnap.exists() ? guideSnap.data() : null;
   } catch (error) {
-    console.error('Registration check failed:', error);
-    return false;
+    console.error('Guide check failed:', error);
+    return null;
+  }
+}
+
+async function syncAvatarUrl(uid, photoURL) {
+  try {
+    const guideRef = doc(db, 'guides', uid);
+    await updateDoc(guideRef, { avatarUrl: photoURL });
+    console.log('Avatar URL synced');
+  } catch (error) {
+    console.error('Avatar sync failed:', error);
   }
 }
 

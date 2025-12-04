@@ -3,6 +3,10 @@
 .env.local
 .env*.local
 
+# Firebase service account (sensitive!)
+service-account.json
+**/service-account.json
+
 # Dependencies
 node_modules/
 
