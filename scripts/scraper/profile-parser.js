@@ -30,70 +30,144 @@ export async function parseProfile(page) {
       // 숫자 파싱 헬퍼
       const parseNumber = (text) => {
         if (!text) return 0;
-        // "1,234" -> 1234, "1.2K" -> 1200, "1.2M" -> 1200000
-        text = text.trim().replace(/,/g, '');
+        // "1,234" -> 1234, "71,538" -> 71538, "230,686,853" -> 230686853
+        text = text.trim().replace(/,/g, '').replace(/개$/, '');
 
-        if (text.includes('K')) {
+        if (text.includes('K') || text.includes('천')) {
           return Math.round(parseFloat(text) * 1000);
         }
-        if (text.includes('M')) {
+        if (text.includes('M') || text.includes('백만')) {
           return Math.round(parseFloat(text) * 1000000);
         }
-        if (text.includes('B')) {
+        if (text.includes('B') || text.includes('십억')) {
           return Math.round(parseFloat(text) * 1000000000);
         }
 
         return parseInt(text) || 0;
       };
 
-      // 레벨 추출 (여러 셀렉터 시도)
-      const levelSelectors = [
-        '[data-level]',
-        '.level-badge',
-        '[class*="level"]',
-        'span:has-text("Level")'
-      ];
+      const allText = document.body.innerText;
 
-      for (const selector of levelSelectors) {
-        try {
-          const el = document.querySelector(selector);
-          if (el) {
-            const match = el.textContent.match(/(\d+)/);
-            if (match) {
-              result.level = parseInt(match[1]);
-              break;
-            }
-          }
-        } catch (e) {}
+      // ===== 레벨 추출 =====
+      // 방법 1: DOM 셀렉터 (div.PMkhac 영역)
+      const levelContainer = document.querySelector('.PMkhac, .qLPauf');
+      if (levelContainer) {
+        const levelMatch = levelContainer.textContent.match(/Level\s*(\d+)|레벨\s*(\d+)/i);
+        if (levelMatch) {
+          result.level = parseInt(levelMatch[1] || levelMatch[2]);
+        }
       }
 
-      // 포인트 추출
+      // 방법 2: 전체 텍스트에서 "Level X Local Guide" 패턴
+      if (result.level === 0) {
+        const levelPatterns = [
+          /Level\s*(\d+)\s*Local Guide/i,
+          /레벨\s*(\d+)/,
+          /LV\.?\s*(\d+)/i
+        ];
+        for (const pattern of levelPatterns) {
+          const match = allText.match(pattern);
+          if (match) {
+            result.level = parseInt(match[1]);
+            break;
+          }
+        }
+      }
+
+      // ===== 포인트 추출 =====
       const pointsPatterns = [
         /(\d[\d,]*)\s*points?/i,
+        /(\d[\d,]*)\s*포인트/,
         /points?\s*[:\s]*(\d[\d,]*)/i
       ];
-
-      const allText = document.body.innerText;
 
       for (const pattern of pointsPatterns) {
         const match = allText.match(pattern);
         if (match) {
-          result.points = parseNumber(match[1]);
+          result.points = parseNumber(match[1] || match[2]);
           break;
         }
       }
 
-      // 기여 통계 추출 (테이블이나 리스트에서)
+      // ===== 리뷰/평가 추출 =====
+      // "리뷰 1,997개 평가 81개" 또는 "1,997 reviews 81 ratings"
+      const reviewSection = document.querySelector('.TiFmlb, .iAEkYb');
+      if (reviewSection) {
+        const reviewText = reviewSection.textContent;
+        // 한국어: "리뷰 1,997개"
+        const korReviewMatch = reviewText.match(/리뷰\s*([\d,]+)/);
+        if (korReviewMatch) {
+          result.reviewCount = parseNumber(korReviewMatch[1]);
+        }
+        // 영어: "1,997 reviews"
+        const engReviewMatch = reviewText.match(/([\d,]+)\s*reviews?/i);
+        if (engReviewMatch && result.reviewCount === 0) {
+          result.reviewCount = parseNumber(engReviewMatch[1]);
+        }
+      }
+
+      // 전체 텍스트 fallback
+      if (result.reviewCount === 0) {
+        const reviewPatterns = [
+          /리뷰\s*([\d,]+)/,
+          /([\d,]+)\s*reviews?/i
+        ];
+        for (const pattern of reviewPatterns) {
+          const match = allText.match(pattern);
+          if (match) {
+            result.reviewCount = parseNumber(match[1]);
+            break;
+          }
+        }
+      }
+
+      // ===== 사진/조회수 추출 =====
+      // "사진 71,538 조회수 230,686,853개"
+      const photoSection = document.querySelector('.iAEkYb');
+      if (photoSection) {
+        const photoText = photoSection.textContent;
+        // 한국어
+        const korPhotoMatch = photoText.match(/사진\s*([\d,]+)/);
+        if (korPhotoMatch) {
+          result.photoCount = parseNumber(korPhotoMatch[1]);
+        }
+        const korViewsMatch = photoText.match(/조회수\s*([\d,]+)/);
+        if (korViewsMatch) {
+          result.photoViews = parseNumber(korViewsMatch[1]);
+        }
+        // 영어
+        const engPhotoMatch = photoText.match(/([\d,]+)\s*photos?/i);
+        if (engPhotoMatch && result.photoCount === 0) {
+          result.photoCount = parseNumber(engPhotoMatch[1]);
+        }
+        const engViewsMatch = photoText.match(/([\d,]+)\s*views?/i);
+        if (engViewsMatch && result.photoViews === 0) {
+          result.photoViews = parseNumber(engViewsMatch[1]);
+        }
+      }
+
+      // 전체 텍스트 fallback
+      if (result.photoCount === 0) {
+        const match = allText.match(/사진\s*([\d,]+)|([\d,]+)\s*photos?/i);
+        if (match) {
+          result.photoCount = parseNumber(match[1] || match[2]);
+        }
+      }
+      if (result.photoViews === 0) {
+        const match = allText.match(/조회수\s*([\d,]+)|([\d,]+)\s*views?/i);
+        if (match) {
+          result.photoViews = parseNumber(match[1] || match[2]);
+        }
+      }
+
+      // ===== 기타 기여 통계 =====
       const contributionPatterns = {
-        reviewCount: [/(\d[\d,KMB.]*)\s*reviews?/i, /reviews?\s*[:\s]*(\d[\d,KMB.]*)/i],
-        photoCount: [/(\d[\d,KMB.]*)\s*photos?/i, /photos?\s*[:\s]*(\d[\d,KMB.]*)/i],
-        photoViews: [/(\d[\d,KMB.]*)\s*photo\s*views?/i, /views?\s*[:\s]*(\d[\d,KMB.]*)/i],
-        videoCount: [/(\d[\d,KMB.]*)\s*videos?/i],
-        edits: [/(\d[\d,KMB.]*)\s*edits?/i],
-        placesAdded: [/(\d[\d,KMB.]*)\s*places?\s*added/i],
-        roadsAdded: [/(\d[\d,KMB.]*)\s*roads?\s*added/i],
-        factsAdded: [/(\d[\d,KMB.]*)\s*facts?/i],
-        questionsAnswered: [/(\d[\d,KMB.]*)\s*answers?/i, /(\d[\d,KMB.]*)\s*Q&A/i]
+        videoCount: [/([\d,]+)\s*videos?/i, /동영상\s*([\d,]+)/],
+        edits: [/([\d,]+)\s*edits?/i, /수정\s*([\d,]+)/],
+        placesAdded: [/([\d,]+)\s*places?\s*added/i, /추가된 장소\s*([\d,]+)/],
+        roadsAdded: [/([\d,]+)\s*roads?\s*added/i, /추가된 도로\s*([\d,]+)/],
+        factsAdded: [/([\d,]+)\s*facts?/i, /팩트\s*([\d,]+)/],
+        questionsAnswered: [/([\d,]+)\s*answers?/i, /([\d,]+)\s*Q&A/i, /답변\s*([\d,]+)/]
       };
 
       for (const [key, patterns] of Object.entries(contributionPatterns)) {
@@ -109,8 +183,8 @@ export async function parseProfile(page) {
       return result;
     });
 
-    // 유효성 검사
-    if (data.level === 0 && data.points === 0) {
+    // 유효성 검사 - points만 있어도 성공
+    if (data.points === 0) {
       console.warn('Could not extract profile data');
       return null;
     }
