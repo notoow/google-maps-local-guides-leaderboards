@@ -70,10 +70,10 @@ function normalizeProfileUrl(url) {
     return url;
   }
 
-  // 정식 URL에서 contrib ID만 추출
+  // 정식 URL에서 contrib ID만 추출 (단축 URL 리다이렉트 대상과 동일한 형태)
   const match = url.match(/google\.com\/maps\/contrib\/(\d+)/);
   if (match) {
-    return `https://www.google.com/maps/contrib/${match[1]}/contribute`;
+    return `https://www.google.com/maps/contrib/${match[1]}`;
   }
 
   return url;
