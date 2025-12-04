@@ -97,7 +97,7 @@
 /* Body */
 .leaderboard__body {
   max-height: 700px;
-  overflow-y: auto;
+  overflow-y: scroll; /* Always show scrollbar to prevent layout shift */
 }
 
 /* Scrollbar Styling */
