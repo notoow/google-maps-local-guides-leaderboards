@@ -241,6 +241,15 @@
   color: var(--color-text-tertiary);
 }
 
+.quick-add__hint a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.quick-add__hint a:hover {
+  opacity: 0.8;
+}
+
 /* Stats Section */
 .stats {
   display: grid;
