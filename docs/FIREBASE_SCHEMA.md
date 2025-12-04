@@ -1,6 +1,6 @@
 # Firebase/Firestore 스키마 및 네이밍 규칙
 
-> 참고: 기존 프로젝트 CLAUDE.md 코딩 컨벤션 준수
+> 최종 업데이트: 2025-12
 
 ---
 
@@ -46,10 +46,11 @@ guides/
 │   ├── # 로컬 가이드 지표
 │   ├── level: number               # 로컬 가이드 레벨 (1-10)
 │   ├── points: number              # 총 포인트
+│   ├── reviewCount: number         # 리뷰 수
+│   ├── ratingCount: number         # 평가 수 (별점만 남긴 것)
 │   ├── photoCount: number          # 업로드한 사진 수
 │   ├── photoViews: number          # 총 사진 조회수
-│   ├── videoViews: number          # 총 동영상 조회수
-│   ├── reviewCount: number         # 리뷰 수
+│   ├── videoCount: number          # 업로드한 동영상 수
 │   │
 │   ├── # Star Photo 정보
 │   ├── starPhoto: {
@@ -67,7 +68,7 @@ guides/
 │   ├── spq: number                 # Star Photo Quotient
 │   │
 │   ├── # 메타데이터
-│   ├── status: string              # 'pending' | 'approved' | 'rejected' | 'banned'
+│   ├── status: string              # 'pending' | 'approved' | 'active' | 'banned'
 │   ├── isGoogler: boolean          # Google 직원 여부
 │   ├── isModerator: boolean        # 모더레이터 여부
 │   ├── joinedThisMonth: boolean    # 이번 달 신규 참여자
@@ -150,16 +151,16 @@ reports/
 문서 ID: {YYYY-MM} (년-월 형식)
 
 guides/{uid}/history/
-├── {2024-12}/
+├── {2025-01}/
 │   ├── points: number
 │   ├── photoViews: number
+│   ├── reviewCount: number
 │   ├── level: number
 │   ├── recordedAt: timestamp
 │   │
 │   ├── # 변동량 (이전 달 대비)
 │   ├── pointsChange: number
-│   ├── photoViewsChange: number
-│   └── percentChange: number
+│   └── photoViewsChange: number
 ```
 
 ### 2.5 admins (관리자 목록)
@@ -256,9 +257,9 @@ service cloud.firestore {
 ### 5.1 Guide Status
 ```javascript
 const GUIDE_STATUS = {
-  PENDING: 'pending',       // 승인 대기
-  APPROVED: 'approved',     // 승인됨
-  REJECTED: 'rejected',     // 거부됨
+  PENDING: 'pending',       // 승인 대기 (등록 직후)
+  APPROVED: 'approved',     // 승인됨 (자동 승인, 아직 스크래핑 전)
+  ACTIVE: 'active',         // 활성 (최초 스크래핑 완료 후)
   BANNED: 'banned'          // 영구 정지
 };
 ```
@@ -369,14 +370,14 @@ src/
 ### Firebase 콘솔 설정
 - [x] 프로젝트 생성
 - [x] Authentication - Google 로그인 활성화
-- [ ] Firestore Database 생성
-- [ ] Security Rules 적용
-- [ ] 복합 인덱스 생성
+- [x] Firestore Database 생성
+- [x] Security Rules 적용
+- [x] 복합 인덱스 생성
 
 ### 코드 구현
-- [ ] Firebase 초기화
-- [ ] Google 로그인 구현
-- [ ] 리더보드 조회 기능
-- [ ] 데이터 제출 폼
-- [ ] 관리자 승인 페이지
-- [ ] 신고 기능
+- [x] Firebase 초기화
+- [x] Google 로그인 구현
+- [x] 리더보드 조회 기능
+- [x] 데이터 제출 폼 (등록 페이지)
+- [x] 관리자 페이지
+- [x] 자동 스크래핑 (Playwright + GitHub Actions)

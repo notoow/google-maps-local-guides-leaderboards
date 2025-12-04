@@ -1,6 +1,6 @@
 # Google Maps Local Guides Leaderboard - 프로젝트 계획서
 
-> 최종 업데이트: 2024-12
+> 최종 업데이트: 2025-12
 
 ---
 
@@ -12,7 +12,7 @@ Google Maps 로컬 가이드들의 기여도를 추적하고 순위를 매기는
 ### 1.2 핵심 특징
 - **자동 데이터 수집**: Playwright로 매월 자동 스크래핑
 - **무료 운영**: GitHub Actions + GitHub Pages + Firebase (무료 티어)
-- **관리 최소화**: 한 번 등록하면 자동 업데이트
+- **관리 최소화**: 등록 후 자동 승인, 자동 데이터 수집
 
 ---
 
@@ -30,14 +30,13 @@ Google Maps 로컬 가이드들의 기여도를 추적하고 순위를 매기는
 |------|------|
 | Firebase Auth | Google 로그인 |
 | Firestore | 데이터베이스 |
-| GitHub Actions | 자동 스크래핑 (매월) |
+| GitHub Actions | 자동 스크래핑 (매월 1일) |
 
 ### 2.3 스크래핑
 | 기술 | 용도 |
 |------|------|
-| **Playwright** | 헤드리스 브라우저 (엔터프라이즈급) |
-| Stealth Plugin | 봇 탐지 우회 |
-| Node.js | 스크래핑 스크립트 |
+| **Playwright** | 헤드리스 브라우저 |
+| Node.js 20+ | 스크래핑 스크립트 |
 
 ---
 
@@ -92,11 +91,13 @@ Google Maps 로컬 가이드들의 기여도를 추적하고 순위를 매기는
 2. Google 로그인
 3. 폼 작성:
    - Google Maps 프로필 URL (필수)
+     - 단축 URL: https://maps.app.goo.gl/...
+     - 정식 URL: https://www.google.com/maps/contrib/...
    - 표시 이름
    - 국가
    - Local Guide 시작일
-4. 관리자 승인 (프로필 URL 검증)
-5. guides 컬렉션에 추가
+4. 자동 승인 (status: approved)
+5. 다음 스크래핑 시 데이터 수집 시작
 ```
 
 ### 4.2 자동 데이터 수집 (매월)
@@ -104,40 +105,40 @@ Google Maps 로컬 가이드들의 기여도를 추적하고 순위를 매기는
 GitHub Actions (매월 1일 00:00 UTC)
     │
     ▼
-guides 컬렉션에서 승인된 사용자 목록 조회
+guides 컬렉션에서 approved/active 상태 가이드 목록 조회
     │
     ▼
-각 사용자의 mapsProfileUrl로 Playwright 접속
+각 사용자의 mapsProfileUrl을 정규화
+(https://www.google.com/maps/contrib/{ID} 형태로 변환)
     │
     ▼
-프로필 페이지에서 데이터 추출:
-    - 레벨
-    - 포인트
-    - 리뷰 수
-    - 사진 수
-    - 사진 조회수
-    - 등등
+Playwright로 프로필 페이지 접속 (locale: en-US)
+    │
+    ▼
+DOM에서 데이터 추출:
+    - .FNyx3: 레벨 (Level X Local Guide)
+    - .VEEl9c: 포인트 (XXX,XXX points)
+    - .Qha3nb: 리뷰/평가 (X reviews · Y ratings)
+    - .Qha3nb: 사진 수 (숫자만)
+    - .Qha3nb: 사진 조회수 (숫자만)
     │
     ▼
 Firebase에 업데이트 + history 서브컬렉션에 이력 저장
     │
     ▼
-리더보드 자동 갱신
+status: approved → active 변경
 ```
 
 ### 4.3 스크래핑 대상 데이터
 
-Google Maps 프로필 URL: `https://www.google.com/maps/contrib/[USER_ID]`
-
-| 필드 | 추출 방법 |
-|------|-----------|
-| level | 프로필 페이지 파싱 |
-| points | 프로필 페이지 파싱 |
-| reviewCount | 프로필 페이지 파싱 |
-| photoCount | 프로필 페이지 파싱 |
-| photoViews | 프로필 페이지 파싱 |
-| videoCount | 프로필 페이지 파싱 |
-| edits | 프로필 페이지 파싱 |
+| 필드 | DOM 셀렉터 | 패턴 (영어) | 패턴 (한국어) |
+|------|-----------|-------------|--------------|
+| level | `.FNyx3` | `Level X Local Guide` | `지역 가이드 레벨 X` |
+| points | `.VEEl9c` | `XXX,XXX points` | `XXX,XXX점` |
+| reviewCount | `.Qha3nb` | `X reviews` | `리뷰 X개` |
+| ratingCount | `.Qha3nb` | `X ratings` | `평가 X개` |
+| photoCount | `.Qha3nb` | 숫자만 | 숫자만 |
+| photoViews | `.Qha3nb` | 숫자만 | 숫자만 |
 
 ---
 
@@ -155,11 +156,10 @@ google-maps-local-guides-leaderboards/
 │   └── FIREBASE_SCHEMA.md       # Firebase 스키마
 │
 ├── scripts/
-│   ├── scraper/
-│   │   ├── index.js             # 스크래핑 메인 스크립트
-│   │   ├── profile-parser.js    # 프로필 페이지 파서
-│   │   └── firebase-updater.js  # Firebase 업데이트
-│   └── package.json             # 스크래핑 의존성
+│   └── scraper/
+│       ├── index.js             # 스크래핑 메인 스크립트
+│       ├── profile-parser.js    # 프로필 페이지 파서
+│       └── package.json         # 스크래핑 의존성
 │
 ├── src/
 │   ├── css/
@@ -171,26 +171,13 @@ google-maps-local-guides-leaderboards/
 │   │   └── responsive.css       # 반응형
 │   │
 │   └── js/
-│       ├── config/
-│       │   └── firebase.js      # Firebase 초기화
-│       │
-│       ├── services/
-│       │   ├── auth-service.js  # 인증
-│       │   ├── guide-service.js # 가이드 데이터
-│       │   ├── submission-service.js # 제출 관리
-│       │   └── report-service.js # 신고
-│       │
-│       ├── utils/
-│       │   ├── format-number.js # 숫자 포맷팅
-│       │   └── calculate-stats.js # 통계 계산
-│       │
-│       └── app.js               # 메인 앱
+│       ├── app.js               # 메인 앱
+│       └── utils/
+│           └── format-number.js # 숫자 포맷팅
 │
 ├── index.html                   # 메인 페이지 (리더보드)
 ├── register.html                # 참여 등록 페이지
 ├── admin.html                   # 관리자 페이지
-├── .gitignore
-├── .env.local                   # 환경변수 (git 제외)
 └── README.md
 ```
 
@@ -200,48 +187,33 @@ google-maps-local-guides-leaderboards/
 
 ### 6.1 메인 페이지 (index.html)
 - 통계 요약 카드 (총 가이드 수, 총 포인트 등)
-- 리더보드 테이블
-- 검색 및 필터 (레벨별, 정렬 기준)
+- 리더보드 테이블 (정렬 가능한 헤더)
+- 검색 및 필터 (레벨별)
 - 다크 모드 토글
 - 로그인/로그아웃 버튼
 
 ### 6.2 등록 페이지 (register.html)
 - Google 로그인 필수
 - 폼 필드:
-  - Google Maps 프로필 URL
+  - Google Maps 프로필 URL (단축 URL 또는 정식 URL)
   - 표시 이름
   - 국가
   - Local Guide 시작일
-- 제출 후 승인 대기 안내
+- 자동 승인 후 안내
 
 ### 6.3 관리자 페이지 (admin.html)
-- 승인 대기 목록
-- 신고 내역
+- 가이드 목록 관리
+- 상태 변경 (active, banned 등)
 - 수동 데이터 수정
-- 스크래핑 로그
 
 ---
 
-## 7. Firestore 컬렉션
+## 7. GitHub Actions 워크플로우
 
-| 컬렉션 | 용도 |
-|--------|------|
-| `guides` | 승인된 로컬 가이드 데이터 |
-| `guides/{uid}/history` | 월별 변동 이력 (서브컬렉션) |
-| `submissions` | 등록/업데이트 요청 (승인 대기) |
-| `reports` | 신고 내역 |
-| `admins` | 관리자 목록 |
-
-상세 스키마: [FIREBASE_SCHEMA.md](./FIREBASE_SCHEMA.md)
-
----
-
-## 8. GitHub Actions 워크플로우
-
-### 8.1 스크래핑 워크플로우 (scrape.yml)
+### 7.1 스크래핑 워크플로우 (scrape.yml)
 
 ```yaml
-name: Monthly Scrape
+name: Local Guides Scraper
 
 on:
   schedule:
@@ -260,32 +232,29 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: |
-          cd scripts
-          npm install
+        working-directory: scripts/scraper
+        run: npm ci || npm install
 
       - name: Install Playwright browsers
-        run: |
-          cd scripts
-          npx playwright install chromium
+        working-directory: scripts/scraper
+        run: npx playwright install chromium --with-deps
 
       - name: Run scraper
+        working-directory: scripts/scraper
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          cd scripts
-          node scraper/index.js
+        run: node index.js
 
-      - name: Commit updated data
+      - name: Commit and push if changed
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add -A
-          git diff --quiet && git diff --staged --quiet || git commit -m "🔄 Monthly data update"
+          git diff --quiet && git diff --staged --quiet || git commit -m "Daily data update"
           git push
 ```
 
-### 8.2 필요한 Secrets
+### 7.2 필요한 Secrets
 
 | Secret | 설명 |
 |--------|------|
@@ -293,7 +262,7 @@ jobs:
 
 ---
 
-## 9. 구현 순서
+## 8. 구현 현황
 
 ### Phase 1: 기본 구조 ✅
 - [x] 프로젝트 디렉토리 생성
@@ -302,37 +271,37 @@ jobs:
 - [x] Security Rules 적용
 - [x] 관리자 등록
 
-### Phase 2: 프론트엔드
-- [ ] HTML 메인 페이지
-- [ ] CSS 스타일 시스템
-- [ ] 리더보드 UI
-- [ ] 다크 모드
-- [ ] 반응형 디자인
+### Phase 2: 프론트엔드 ✅
+- [x] HTML 메인 페이지
+- [x] CSS 스타일 시스템
+- [x] 리더보드 UI (테이블 헤더 정렬)
+- [x] 다크 모드
+- [x] 반응형 디자인
 
-### Phase 3: 인증 & 등록
-- [ ] Google 로그인 구현
-- [ ] 등록 폼 페이지
-- [ ] 제출 → 승인 플로우
+### Phase 3: 인증 & 등록 ✅
+- [x] Google 로그인 구현
+- [x] 등록 폼 페이지
+- [x] 자동 승인 플로우
 
-### Phase 4: 관리자 기능
-- [ ] 관리자 페이지
-- [ ] 승인/거부 기능
-- [ ] 신고 처리
+### Phase 4: 관리자 기능 ✅
+- [x] 관리자 페이지
+- [x] 상태 변경 기능
 
-### Phase 5: 자동 스크래핑
-- [ ] Playwright 스크래퍼 개발
-- [ ] 프로필 페이지 파서
-- [ ] GitHub Actions 워크플로우
-- [ ] Firebase 업데이트 로직
+### Phase 5: 자동 스크래핑 ✅
+- [x] Playwright 스크래퍼 개발
+- [x] 프로필 페이지 파서
+- [x] GitHub Actions 워크플로우
+- [x] Firebase 업데이트 로직
+- [x] URL 정규화 (단축 URL 지원)
+- [x] 영어/한국어 패턴 지원
 
-### Phase 6: 배포
-- [ ] GitHub Pages 설정
-- [ ] 커스텀 도메인 (선택)
-- [ ] README 작성
+### Phase 6: 배포 ✅
+- [x] GitHub Pages 설정
+- [x] README 작성
 
 ---
 
-## 10. 비용
+## 9. 비용
 
 | 항목 | 비용 |
 |------|------|
@@ -344,20 +313,19 @@ jobs:
 
 ---
 
-## 11. 리스크 및 대응
+## 10. 리스크 및 대응
 
 | 리스크 | 대응 |
 |--------|------|
-| Google이 스크래핑 차단 | Stealth 플러그인, 랜덤 딜레이, 필요시 수동 전환 |
-| 프로필 페이지 구조 변경 | 파서 업데이트 필요 (알림 설정) |
+| Google이 스크래핑 차단 | 랜덤 딜레이, User-Agent 설정, 필요시 수동 전환 |
+| 프로필 페이지 구조 변경 | DOM 셀렉터 업데이트 필요 (모니터링) |
 | 참여자 수 급증 (100+) | GitHub Actions 시간 제한 주의, 배치 처리 |
-| 데이터 조작 시도 | 신고 시스템, 관리자 검토 |
 
 ---
 
-## 12. 참고 자료
+## 11. 참고 자료
 
-- [google-local-guides-api (GitHub)](https://github.com/jinwook-k/google-local-guides-api) - 비공식 API
+- [google-local-guides-api (GitHub)](https://github.com/jinwook-k/google-local-guides-api) - 참고용 비공식 API
 - [Playwright 공식 문서](https://playwright.dev/)
 - [Firebase 공식 문서](https://firebase.google.com/docs)
 - [Top 100 Local Guides](https://top100localguides.com/) - 원본 리더보드
