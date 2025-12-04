@@ -63,30 +63,38 @@ async function getGuidesToScrape(db) {
   return guides;
 }
 
-// URL 정규화 - /photos 페이지로 접속해야 프로필 정보가 표시됨
-function normalizeProfileUrl(url) {
-  // maps.app.goo.gl 단축 URL은 그대로 사용 (Playwright가 /photos 탭으로 리다이렉트)
+// URL에서 contrib ID 추출
+function extractContribId(url) {
+  // maps.app.goo.gl 단축 URL은 ID 추출 불가 - 그대로 반환
   if (url.includes('maps.app.goo.gl')) {
-    return url;
+    return null;
   }
 
-  // 정식 URL에서 contrib ID 추출 후 /photos 경로 추가
   const match = url.match(/google\.com\/maps\/contrib\/(\d+)/);
-  if (match) {
-    return `https://www.google.com/maps/contrib/${match[1]}/photos`;
-  }
-
-  return url;
+  return match ? match[1] : null;
 }
 
-// 가이드 프로필 스크래핑
-async function scrapeGuideProfile(page, guide) {
-  const originalUrl = guide.mapsProfileUrl;
-  const url = normalizeProfileUrl(originalUrl);
-  console.log(`Scraping: ${guide.displayName} - ${url}`);
+// /photos와 /reviews 두 페이지 URL 생성
+function getProfileUrls(url) {
+  const contribId = extractContribId(url);
 
+  if (contribId) {
+    return {
+      photos: `https://www.google.com/maps/contrib/${contribId}/photos`,
+      reviews: `https://www.google.com/maps/contrib/${contribId}/reviews`
+    };
+  }
+
+  // 단축 URL인 경우 - 일단 단축 URL 그대로 사용 (photos로 리다이렉트됨)
+  return {
+    photos: url,
+    reviews: null // 단축 URL은 리다이렉트 후 ID 추출해야 함
+  };
+}
+
+// 단일 페이지 스크래핑 헬퍼
+async function scrapeSinglePage(page, url, pageName) {
   try {
-    // 1차 시도: domcontentloaded (더 빠름)
     await page.goto(url, {
       waitUntil: 'domcontentloaded',
       timeout: 60000
@@ -99,28 +107,81 @@ async function scrapeGuideProfile(page, guide) {
     try {
       await page.waitForSelector('[data-section-id="contributions"]', { timeout: 10000 });
     } catch {
-      // 셀렉터를 못 찾아도 진행 (다른 구조일 수 있음)
-      console.log(`Waiting for content to stabilize...`);
+      console.log(`  ${pageName}: Waiting for content to stabilize...`);
       await page.waitForTimeout(2000);
     }
 
     // 프로필 데이터 추출
-    const profileData = await parseProfile(page);
+    const data = await parseProfile(page);
 
-    if (!profileData) {
-      console.warn(`Failed to parse profile for ${guide.displayName}`);
+    if (data && data._debug_qha3nb) {
+      console.log(`  ${pageName} .Qha3nb: ${JSON.stringify(data._debug_qha3nb)}`);
+      delete data._debug_qha3nb;
+    }
+
+    return data;
+  } catch (error) {
+    console.error(`  ${pageName} error:`, error.message);
+    return null;
+  }
+}
+
+// 가이드 프로필 스크래핑 (photos + reviews 두 페이지)
+async function scrapeGuideProfile(page, guide) {
+  const originalUrl = guide.mapsProfileUrl;
+  const urls = getProfileUrls(originalUrl);
+  console.log(`Scraping: ${guide.displayName}`);
+
+  try {
+    // 1. /photos 페이지 스크래핑 (사진 수, 조회수)
+    console.log(`  → Photos page: ${urls.photos}`);
+    const photosData = await scrapeSinglePage(page, urls.photos, 'photos');
+
+    // 단축 URL인 경우 리다이렉트 후 URL에서 ID 추출
+    let reviewsUrl = urls.reviews;
+    if (!reviewsUrl && photosData) {
+      const currentUrl = page.url();
+      const contribId = extractContribId(currentUrl);
+      if (contribId) {
+        reviewsUrl = `https://www.google.com/maps/contrib/${contribId}/reviews`;
+      }
+    }
+
+    // 2. /reviews 페이지 스크래핑 (리뷰 수, 평가 수)
+    let reviewsData = null;
+    if (reviewsUrl) {
+      // 페이지 간 딜레이
+      await page.waitForTimeout(1000 + Math.random() * 1000);
+
+      console.log(`  → Reviews page: ${reviewsUrl}`);
+      reviewsData = await scrapeSinglePage(page, reviewsUrl, 'reviews');
+    }
+
+    // 3. 데이터 병합
+    if (!photosData && !reviewsData) {
+      console.warn(`  Failed to parse profile for ${guide.displayName}`);
       return null;
     }
 
-    console.log(`Scraped: Level ${profileData.level}, ${profileData.points} points, ${profileData.reviewCount} reviews, ${profileData.ratingCount} ratings, ${profileData.photoCount} photos, ${profileData.photoViews} views`);
+    // 두 페이지 데이터 병합 (각 페이지에서 더 나은 값 사용)
+    const mergedData = {
+      level: photosData?.level || reviewsData?.level || 0,
+      points: photosData?.points || reviewsData?.points || 0,
+      reviewCount: reviewsData?.reviewCount || photosData?.reviewCount || 0,
+      ratingCount: reviewsData?.ratingCount || photosData?.ratingCount || 0,
+      photoCount: photosData?.photoCount || reviewsData?.photoCount || 0,
+      photoViews: photosData?.photoViews || reviewsData?.photoViews || 0,
+      videoCount: photosData?.videoCount || reviewsData?.videoCount || 0,
+      edits: photosData?.edits || reviewsData?.edits || 0,
+      placesAdded: photosData?.placesAdded || reviewsData?.placesAdded || 0,
+      roadsAdded: photosData?.roadsAdded || reviewsData?.roadsAdded || 0,
+      factsAdded: photosData?.factsAdded || reviewsData?.factsAdded || 0,
+      questionsAnswered: photosData?.questionsAnswered || reviewsData?.questionsAnswered || 0
+    };
 
-    // 디버깅: .Qha3nb 요소들 출력
-    if (profileData._debug_qha3nb) {
-      console.log(`  .Qha3nb elements: ${JSON.stringify(profileData._debug_qha3nb)}`);
-      delete profileData._debug_qha3nb; // Firebase에 저장하지 않음
-    }
+    console.log(`  ✓ Merged: Level ${mergedData.level}, ${mergedData.points} points, ${mergedData.reviewCount} reviews, ${mergedData.ratingCount} ratings, ${mergedData.photoCount} photos, ${mergedData.photoViews} views`);
 
-    return profileData;
+    return mergedData;
 
   } catch (error) {
     console.error(`Error scraping ${guide.displayName}:`, error.message);
