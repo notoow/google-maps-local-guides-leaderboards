@@ -850,6 +850,14 @@ async function handleQuickAdd() {
   btn.innerHTML = '<span>Adding...</span>';
 
   try {
+    // Check if user is logged in
+    if (!currentUser) {
+      showToast('Please log in to add a profile', 'error');
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      return;
+    }
+
     // Save directly to guides collection (no country, no displayName - scraper will fill these)
     const guideData = {
       mapsProfileUrl: url,
@@ -861,6 +869,7 @@ async function handleQuickAdd() {
       photoViews: 0,
       reviewCount: 0,
       status: 'approved', // Will become 'active' after first scrape
+      uid: currentUser.uid, // Include uid for Firestore rules
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
