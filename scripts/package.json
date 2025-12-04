@@ -1,0 +1,18 @@
+{
+  "name": "local-guides-scraper",
+  "version": "1.0.0",
+  "description": "Playwright scraper for Google Maps Local Guides profiles",
+  "type": "module",
+  "scripts": {
+    "scrape": "node scraper/index.js",
+    "test": "node scraper/test.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "firebase-admin": "^12.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

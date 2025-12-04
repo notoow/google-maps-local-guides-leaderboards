@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Join the Local Guides Leaderboard">
+  <title>Join - Local Guides Leaderboard</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="src/css/variables.css">
+  <link rel="stylesheet" href="src/css/reset.css">
+  <link rel="stylesheet" href="src/css/components.css">
+  <link rel="stylesheet" href="src/css/layout.css">
+  <link rel="stylesheet" href="src/css/responsive.css">
+
+  <style>
+    .register {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .register__card {
+      background-color: var(--color-bg-elevated);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--color-border);
+      padding: var(--space-8);
+    }
+
+    .register__header {
+      text-align: center;
+      margin-bottom: var(--space-8);
+    }
+
+    .register__title {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      margin-bottom: var(--space-2);
+    }
+
+    .register__subtitle {
+      color: var(--color-text-secondary);
+    }
+
+    .register__login-required {
+      text-align: center;
+      padding: var(--space-8);
+    }
+
+    .register__login-required p {
+      margin-bottom: var(--space-4);
+      color: var(--color-text-secondary);
+    }
+
+    .register__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: var(--space-3);
+      background-color: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--text-base);
+      transition: all var(--transition-fast);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+
+    .form-group small {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .form-group--error input {
+      border-color: var(--color-error);
+    }
+
+    .form-group__error {
+      color: var(--color-error);
+      font-size: var(--text-sm);
+    }
+
+    .register__help {
+      background-color: var(--color-primary-light);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+
+    .register__help h3 {
+      font-size: var(--text-sm);
+      font-weight: var(--font-semibold);
+      margin-bottom: var(--space-2);
+      color: var(--color-primary);
+    }
+
+    .register__help ol {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      padding-left: var(--space-5);
+    }
+
+    .register__help li {
+      list-style: decimal;
+      margin-bottom: var(--space-1);
+    }
+
+    .register__actions {
+      display: flex;
+      gap: var(--space-3);
+      margin-top: var(--space-4);
+    }
+
+    .register__actions .btn {
+      flex: 1;
+      padding: var(--space-3);
+    }
+
+    .register__success {
+      text-align: center;
+      padding: var(--space-8);
+    }
+
+    .register__success svg {
+      width: 64px;
+      height: 64px;
+      color: var(--color-success);
+      margin-bottom: var(--space-4);
+    }
+
+    .register__success h2 {
+      font-size: var(--text-xl);
+      margin-bottom: var(--space-2);
+    }
+
+    .register__success p {
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-6);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <a href="index.html" class="header__logo">
+          <svg class="header__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor"/>
+            <circle cx="12" cy="9" r="2.5" fill="white"/>
+          </svg>
+          <span class="header__title">Local Guides Leaderboard</span>
+        </a>
+
+        <nav class="header__nav">
+          <button class="btn btn--icon" id="themeToggle" aria-label="Toggle theme">
+            <svg class="icon icon--sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg class="icon icon--moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <section class="register">
+          <div class="register__card">
+            <div class="register__header">
+              <h1 class="register__title">Join the Leaderboard</h1>
+              <p class="register__subtitle">Register to appear on the Local Guides Leaderboard</p>
+            </div>
+
+            <!-- Login Required -->
+            <div class="register__login-required" id="loginRequired">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" y1="12" x2="3" y2="12"/>
+              </svg>
+              <p>Please login with Google to continue</p>
+              <button class="btn btn--primary" id="loginBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Login with Google
+              </button>
+            </div>
+
+            <!-- Registration Form -->
+            <div id="registerForm" hidden>
+              <div class="register__help">
+                <h3>How to find your Maps Profile URL</h3>
+                <ol>
+                  <li>Go to <a href="https://www.google.com/maps/contrib/" target="_blank">google.com/maps/contrib/</a></li>
+                  <li>Sign in with your Google account</li>
+                  <li>Copy the full URL from the address bar</li>
+                  <li>It should look like: https://www.google.com/maps/contrib/123456789...</li>
+                </ol>
+              </div>
+
+              <form class="register__form" id="form">
+                <div class="form-group">
+                  <label for="mapsProfileUrl">Google Maps Profile URL *</label>
+                  <input
+                    type="url"
+                    id="mapsProfileUrl"
+                    name="mapsProfileUrl"
+                    placeholder="https://www.google.com/maps/contrib/..."
+                    required
+                  >
+                  <small>This URL is used to automatically collect your contribution data</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="displayName">Display Name *</label>
+                  <input
+                    type="text"
+                    id="displayName"
+                    name="displayName"
+                    placeholder="Your name on the leaderboard"
+                    required
+                    maxlength="50"
+                  >
+                </div>
+
+                <div class="form-group">
+                  <label for="country">Country *</label>
+                  <select id="country" name="country" required>
+                    <option value="">Select your country</option>
+                    <option value="KR">South Korea</option>
+                    <option value="US">United States</option>
+                    <option value="JP">Japan</option>
+                    <option value="CN">China</option>
+                    <option value="TW">Taiwan</option>
+                    <option value="HK">Hong Kong</option>
+                    <option value="SG">Singapore</option>
+                    <option value="TH">Thailand</option>
+                    <option value="VN">Vietnam</option>
+                    <option value="PH">Philippines</option>
+                    <option value="ID">Indonesia</option>
+                    <option value="MY">Malaysia</option>
+                    <option value="IN">India</option>
+                    <option value="AU">Australia</option>
+                    <option value="NZ">New Zealand</option>
+                    <option value="UK">United Kingdom</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="IT">Italy</option>
+                    <option value="ES">Spain</option>
+                    <option value="NL">Netherlands</option>
+                    <option value="CA">Canada</option>
+                    <option value="BR">Brazil</option>
+                    <option value="MX">Mexico</option>
+                    <option value="AR">Argentina</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="startDate">Local Guide Start Date</label>
+                  <input
+                    type="date"
+                    id="startDate"
+                    name="startDate"
+                  >
+                  <small>When did you become a Local Guide? (Check your welcome email from Google)</small>
+                </div>
+
+                <div class="register__actions">
+                  <a href="index.html" class="btn btn--secondary">Cancel</a>
+                  <button type="submit" class="btn btn--primary" id="submitBtn">
+                    Submit Registration
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Success Message -->
+            <div class="register__success" id="successMessage" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <h2>Registration Submitted!</h2>
+              <p>Your registration is pending approval. You'll appear on the leaderboard once approved.</p>
+              <a href="index.html" class="btn btn--primary">Back to Leaderboard</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>Made with passion for the Local Guides community.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module">
+    import { auth, db, googleProvider } from './src/js/config/firebase.js';
+    import {
+      signInWithPopup,
+      onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      collection,
+      addDoc,
+      serverTimestamp
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    // Theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    });
+
+    // Auth
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      document.getElementById('loginRequired').hidden = !!user;
+      document.getElementById('registerForm').hidden = !user;
+
+      if (user) {
+        document.getElementById('displayName').value = user.displayName || '';
+      }
+    });
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (error) {
+        console.error('Login failed:', error);
+        alert('Login failed: ' + error.message);
+      }
+    });
+
+    // Form Submit
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!currentUser) {
+        alert('Please login first');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const formData = {
+          userId: currentUser.uid,
+          userEmail: currentUser.email,
+          type: 'new',
+          data: {
+            displayName: document.getElementById('displayName').value.trim(),
+            mapsProfileUrl: document.getElementById('mapsProfileUrl').value.trim(),
+            country: document.getElementById('country').value,
+            startDate: document.getElementById('startDate').value || null,
+            level: 1,
+            points: 0,
+            photoCount: 0,
+            photoViews: 0,
+            reviewCount: 0
+          },
+          status: 'pending',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+
+        await addDoc(collection(db, 'submissions'), formData);
+
+        document.getElementById('registerForm').hidden = true;
+        document.getElementById('successMessage').hidden = false;
+
+      } catch (error) {
+        console.error('Submission failed:', error);
+        alert('Submission failed: ' + error.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Registration';
+      }
+    });
+  </script>
+</body>
+</html>

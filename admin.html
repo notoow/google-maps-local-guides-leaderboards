@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Admin - Local Guides Leaderboard</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="src/css/variables.css">
+  <link rel="stylesheet" href="src/css/reset.css">
+  <link rel="stylesheet" href="src/css/components.css">
+  <link rel="stylesheet" href="src/css/layout.css">
+  <link rel="stylesheet" href="src/css/responsive.css">
+
+  <style>
+    .admin {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .admin__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-6);
+    }
+
+    .admin__title {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+    }
+
+    .admin__tabs {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-6);
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: var(--space-2);
+    }
+
+    .admin__tab {
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      color: var(--color-text-secondary);
+      border-radius: var(--radius-md);
+      transition: all var(--transition-fast);
+    }
+
+    .admin__tab:hover {
+      color: var(--color-text);
+      background-color: var(--color-bg-hover);
+    }
+
+    .admin__tab--active {
+      color: var(--color-primary);
+      background-color: var(--color-primary-light);
+    }
+
+    .admin__section {
+      background-color: var(--color-bg-elevated);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+    }
+
+    .admin__section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) var(--space-6);
+      border-bottom: 1px solid var(--color-border);
+      background-color: var(--color-bg-hover);
+    }
+
+    .admin__section-title {
+      font-size: var(--text-lg);
+      font-weight: var(--font-semibold);
+    }
+
+    .admin__count {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      background-color: var(--color-bg);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+    }
+
+    .admin__list {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .admin__item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-4);
+      padding: var(--space-4) var(--space-6);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .admin__item:last-child {
+      border-bottom: none;
+    }
+
+    .admin__item-content {
+      flex: 1;
+    }
+
+    .admin__item-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-2);
+    }
+
+    .admin__item-name {
+      font-weight: var(--font-semibold);
+    }
+
+    .admin__item-email {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .admin__item-date {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      margin-left: auto;
+    }
+
+    .admin__item-details {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-2);
+    }
+
+    .admin__item-details a {
+      color: var(--color-primary);
+      word-break: break-all;
+    }
+
+    .admin__item-actions {
+      display: flex;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+
+    .admin__empty {
+      text-align: center;
+      padding: var(--space-12);
+      color: var(--color-text-tertiary);
+    }
+
+    .admin__empty svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: var(--space-4);
+    }
+
+    .admin__unauthorized {
+      text-align: center;
+      padding: var(--space-16);
+    }
+
+    .admin__unauthorized svg {
+      width: 64px;
+      height: 64px;
+      color: var(--color-error);
+      margin-bottom: var(--space-4);
+    }
+
+    .admin__unauthorized h2 {
+      font-size: var(--text-xl);
+      margin-bottom: var(--space-2);
+    }
+
+    .admin__unauthorized p {
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-6);
+    }
+
+    .badge {
+      font-size: var(--text-xs);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-weight: var(--font-medium);
+    }
+
+    .badge--pending {
+      background-color: #fef3c7;
+      color: #d97706;
+    }
+
+    .badge--approved {
+      background-color: #d1fae5;
+      color: #059669;
+    }
+
+    .badge--rejected {
+      background-color: #fee2e2;
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <a href="index.html" class="header__logo">
+          <svg class="header__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor"/>
+            <circle cx="12" cy="9" r="2.5" fill="white"/>
+          </svg>
+          <span class="header__title">Local Guides Leaderboard</span>
+        </a>
+
+        <nav class="header__nav">
+          <a href="index.html" class="btn btn--secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back
+          </a>
+          <button class="btn btn--icon" id="themeToggle" aria-label="Toggle theme">
+            <svg class="icon icon--sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg class="icon icon--moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <!-- Unauthorized -->
+        <div class="admin__unauthorized" id="unauthorized" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+          <h2>Access Denied</h2>
+          <p>You don't have permission to access this page.</p>
+          <a href="index.html" class="btn btn--primary">Go to Leaderboard</a>
+        </div>
+
+        <!-- Admin Panel -->
+        <section class="admin" id="adminPanel" hidden>
+          <div class="admin__header">
+            <h1 class="admin__title">Admin Panel</h1>
+          </div>
+
+          <div class="admin__tabs">
+            <button class="admin__tab admin__tab--active" data-tab="submissions">
+              Pending Registrations
+            </button>
+            <button class="admin__tab" data-tab="reports">
+              Reports
+            </button>
+          </div>
+
+          <!-- Submissions -->
+          <div class="admin__section" id="submissionsSection">
+            <div class="admin__section-header">
+              <h2 class="admin__section-title">Pending Registrations</h2>
+              <span class="admin__count" id="submissionsCount">0</span>
+            </div>
+            <div class="admin__list" id="submissionsList">
+              <div class="admin__empty">
+                <div class="spinner"></div>
+                <p>Loading...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reports -->
+          <div class="admin__section" id="reportsSection" hidden>
+            <div class="admin__section-header">
+              <h2 class="admin__section-title">Pending Reports</h2>
+              <span class="admin__count" id="reportsCount">0</span>
+            </div>
+            <div class="admin__list" id="reportsList">
+              <div class="admin__empty">
+                <div class="spinner"></div>
+                <p>Loading...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>Admin Panel - Local Guides Leaderboard</p>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './src/js/config/firebase.js';
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import {
+      collection,
+      doc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      setDoc,
+      query,
+      where,
+      orderBy,
+      serverTimestamp
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    // Theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    });
+
+    // Auth & Admin Check
+    let currentUser = null;
+    let isAdmin = false;
+
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
+
+      if (!user) {
+        document.getElementById('unauthorized').hidden = false;
+        document.getElementById('adminPanel').hidden = true;
+        return;
+      }
+
+      // Check admin status
+      const adminRef = doc(db, 'admins', user.uid);
+      const adminSnap = await getDoc(adminRef);
+      isAdmin = adminSnap.exists();
+
+      if (!isAdmin) {
+        document.getElementById('unauthorized').hidden = false;
+        document.getElementById('adminPanel').hidden = true;
+        return;
+      }
+
+      document.getElementById('unauthorized').hidden = true;
+      document.getElementById('adminPanel').hidden = false;
+
+      loadSubmissions();
+      loadReports();
+    });
+
+    // Tabs
+    document.querySelectorAll('.admin__tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.admin__tab').forEach(t => t.classList.remove('admin__tab--active'));
+        tab.classList.add('admin__tab--active');
+
+        const tabName = tab.dataset.tab;
+        document.getElementById('submissionsSection').hidden = tabName !== 'submissions';
+        document.getElementById('reportsSection').hidden = tabName !== 'reports';
+      });
+    });
+
+    // Load Submissions
+    async function loadSubmissions() {
+      try {
+        const q = query(
+          collection(db, 'submissions'),
+          where('status', '==', 'pending'),
+          orderBy('createdAt', 'asc')
+        );
+
+        const snapshot = await getDocs(q);
+        const submissions = [];
+        snapshot.forEach(doc => submissions.push({ id: doc.id, ...doc.data() }));
+
+        document.getElementById('submissionsCount').textContent = submissions.length;
+
+        if (submissions.length === 0) {
+          document.getElementById('submissionsList').innerHTML = `
+            <div class="admin__empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <p>No pending registrations</p>
+            </div>
+          `;
+          return;
+        }
+
+        document.getElementById('submissionsList').innerHTML = submissions.map(sub => `
+          <div class="admin__item" data-id="${sub.id}">
+            <div class="admin__item-content">
+              <div class="admin__item-header">
+                <span class="admin__item-name">${sub.data?.displayName || 'Unknown'}</span>
+                <span class="admin__item-email">${sub.userEmail}</span>
+                <span class="badge badge--pending">Pending</span>
+                <span class="admin__item-date">${formatDate(sub.createdAt)}</span>
+              </div>
+              <div class="admin__item-details">
+                <strong>Maps Profile:</strong>
+                <a href="${sub.data?.mapsProfileUrl}" target="_blank">${sub.data?.mapsProfileUrl}</a>
+                <br>
+                <strong>Country:</strong> ${sub.data?.country || 'N/A'}
+              </div>
+            </div>
+            <div class="admin__item-actions">
+              <button class="btn btn--primary btn--sm" onclick="approveSubmission('${sub.id}', '${sub.userId}')">
+                Approve
+              </button>
+              <button class="btn btn--danger btn--sm" onclick="rejectSubmission('${sub.id}')">
+                Reject
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        console.error('Failed to load submissions:', error);
+        document.getElementById('submissionsList').innerHTML = `
+          <div class="admin__empty">
+            <p>Failed to load: ${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Load Reports
+    async function loadReports() {
+      try {
+        const q = query(
+          collection(db, 'reports'),
+          where('status', '==', 'pending'),
+          orderBy('createdAt', 'asc')
+        );
+
+        const snapshot = await getDocs(q);
+        const reports = [];
+        snapshot.forEach(doc => reports.push({ id: doc.id, ...doc.data() }));
+
+        document.getElementById('reportsCount').textContent = reports.length;
+
+        if (reports.length === 0) {
+          document.getElementById('reportsList').innerHTML = `
+            <div class="admin__empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <p>No pending reports</p>
+            </div>
+          `;
+          return;
+        }
+
+        document.getElementById('reportsList').innerHTML = reports.map(report => `
+          <div class="admin__item" data-id="${report.id}">
+            <div class="admin__item-content">
+              <div class="admin__item-header">
+                <span class="admin__item-name">Report: ${report.targetDisplayName}</span>
+                <span class="badge badge--pending">${report.reason}</span>
+                <span class="admin__item-date">${formatDate(report.createdAt)}</span>
+              </div>
+              <div class="admin__item-details">
+                <strong>Reporter:</strong> ${report.reporterEmail}<br>
+                <strong>Details:</strong> ${report.detail || 'No details provided'}
+              </div>
+            </div>
+            <div class="admin__item-actions">
+              <button class="btn btn--primary btn--sm" onclick="resolveReport('${report.id}', 'resolved')">
+                Resolve
+              </button>
+              <button class="btn btn--secondary btn--sm" onclick="resolveReport('${report.id}', 'dismissed')">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        console.error('Failed to load reports:', error);
+      }
+    }
+
+    // Approve Submission
+    window.approveSubmission = async (submissionId, userId) => {
+      if (!confirm('Approve this registration?')) return;
+
+      try {
+        // Get submission data
+        const subRef = doc(db, 'submissions', submissionId);
+        const subSnap = await getDoc(subRef);
+        const submission = subSnap.data();
+
+        // Create/update guide document
+        const guideRef = doc(db, 'guides', userId);
+        await setDoc(guideRef, {
+          odLxTydGbcKN2: odLxTydGbcKN2,
+          odLxTydGbcKN2: submission.userEmail,
+          ...submission.data,
+          status: 'approved',
+          approvedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        // Update submission status
+        await updateDoc(subRef, {
+          status: 'approved',
+          reviewedBy: currentUser.uid,
+          reviewedAt: serverTimestamp()
+        });
+
+        alert('Registration approved!');
+        loadSubmissions();
+
+      } catch (error) {
+        console.error('Approval failed:', error);
+        alert('Failed: ' + error.message);
+      }
+    };
+
+    // Reject Submission
+    window.rejectSubmission = async (submissionId) => {
+      const reason = prompt('Rejection reason:');
+      if (!reason) return;
+
+      try {
+        await updateDoc(doc(db, 'submissions', submissionId), {
+          status: 'rejected',
+          rejectReason: reason,
+          reviewedBy: currentUser.uid,
+          reviewedAt: serverTimestamp()
+        });
+
+        alert('Registration rejected');
+        loadSubmissions();
+
+      } catch (error) {
+        console.error('Rejection failed:', error);
+        alert('Failed: ' + error.message);
+      }
+    };
+
+    // Resolve Report
+    window.resolveReport = async (reportId, status) => {
+      try {
+        await updateDoc(doc(db, 'reports', reportId), {
+          status,
+          reviewedBy: currentUser.uid,
+          reviewedAt: serverTimestamp()
+        });
+
+        alert('Report ' + status);
+        loadReports();
+
+      } catch (error) {
+        console.error('Failed:', error);
+        alert('Failed: ' + error.message);
+      }
+    };
+
+    // Format Date
+    function formatDate(timestamp) {
+      if (!timestamp) return 'N/A';
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+  </script>
+</body>
+</html>

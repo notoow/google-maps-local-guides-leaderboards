@@ -1,0 +1,54 @@
+name: Monthly Scrape
+
+on:
+  # 매월 1일 00:00 UTC에 실행
+  schedule:
+    - cron: '0 0 1 * *'
+
+  # 수동 실행 가능
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: npm ci || npm install
+
+      - name: Install Playwright browsers
+        working-directory: scripts
+        run: npx playwright install chromium --with-deps
+
+      - name: Run scraper
+        working-directory: scripts
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scraper/index.js
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Create scrape log
+        run: |
+          echo "Last scraped: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" > scrape-log.txt
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git diff --quiet && git diff --staged --quiet || git commit -m "🔄 Monthly data update - ${{ steps.date.outputs.date }}"
+          git push
