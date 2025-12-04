@@ -40,6 +40,11 @@
   background-color: #c62828;
 }
 
+.btn--sm {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+}
+
 .btn--icon {
   width: 40px;
   height: 40px;

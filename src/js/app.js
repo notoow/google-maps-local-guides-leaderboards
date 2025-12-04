@@ -190,6 +190,8 @@ async function loadLeaderboard() {
       guides.push({ id: docSnap.id, ...docSnap.data() });
     });
 
+    console.log('Loaded guides:', guides.length);
+
     // Sort client-side by points
     guides.sort((a, b) => (b.points || 0) - (a.points || 0));
 
@@ -201,8 +203,8 @@ async function loadLeaderboard() {
     renderLeaderboard(filteredGuides);
 
   } catch (error) {
-    console.error('Failed to load leaderboard:', error);
-    showToast('Failed to load leaderboard', 'error');
+    console.error('Failed to load leaderboard:', error.code, error.message);
+    showToast('Failed to load leaderboard: ' + error.message, 'error');
 
     // Show demo data if Firebase fails
     loadDemoData();
@@ -238,6 +240,59 @@ function updateStats(data) {
   elements.lastUpdate.textContent = `Last updated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`;
 }
 
+function renderGuideRow(guide, rank, isPinned = false) {
+  const rankClass = getRankBadgeClass(rank);
+  const levelClass = getLevelBadgeClass(guide.level);
+  const initial = (guide.displayName || 'U')[0].toUpperCase();
+
+  // Badges
+  let badges = '';
+  if (guide.status === 'pending') {
+    badges += '<span class="leaderboard__badge leaderboard__badge--pending">PENDING</span>';
+  } else if (guide.status === 'approved') {
+    badges += '<span class="leaderboard__badge leaderboard__badge--syncing">SYNCING</span>';
+  }
+  if (guide.joinedThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--new">NEW</span>';
+  if (guide.leveledUpThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--levelup">LEVEL UP</span>';
+  if (guide.isGoogler) badges += '<span class="leaderboard__badge leaderboard__badge--googler">GOOGLER</span>';
+
+  // Row class
+  let rowClass = 'leaderboard__row';
+  if (isPinned) {
+    rowClass += ' leaderboard__row--pinned';
+  } else if (rank === 1) {
+    rowClass += ' leaderboard__row--top-1';
+  } else if (rank === 2) {
+    rowClass += ' leaderboard__row--top-2';
+  } else if (rank === 3) {
+    rowClass += ' leaderboard__row--top-3';
+  }
+
+  return `
+    <div class="${rowClass}" data-id="${guide.id}" data-name="${guide.displayName}">
+      <div class="leaderboard__rank">
+        <span class="rank-badge ${rankClass}">${rank}</span>
+      </div>
+      <div class="leaderboard__user">
+        <div class="avatar">
+          ${guide.avatarUrl ? `<img src="${guide.avatarUrl}" alt="">` : initial}
+        </div>
+        <div class="leaderboard__user-info" data-stats="Lv.${guide.level} | ${formatCompactNumber(guide.points)} pts | ${formatCompactNumber(guide.reviewCount)} reviews">
+          <span class="leaderboard__user-name">${guide.displayName || 'Unknown'}${isPinned ? ' (You)' : ''}</span>
+          <span class="leaderboard__user-country">${guide.country || ''}</span>
+        </div>
+        <div class="leaderboard__user-badges">${badges}</div>
+      </div>
+      <div class="leaderboard__level">
+        <span class="level-badge ${levelClass}">${guide.level}</span>
+      </div>
+      <div class="leaderboard__points">${formatCompactNumber(guide.points)}</div>
+      <div class="leaderboard__reviews">${formatCompactNumber(guide.reviewCount)}</div>
+      <div class="leaderboard__photos">${formatCompactNumber(guide.photoCount)}</div>
+    </div>
+  `;
+}
+
 function renderLeaderboard(data) {
   if (data.length === 0) {
     elements.leaderboardBody.innerHTML = '';
@@ -247,58 +302,25 @@ function renderLeaderboard(data) {
 
   elements.emptyState.hidden = true;
 
-  const html = data.map((guide, index) => {
-    const rank = index + 1;
-    const rankClass = getRankBadgeClass(rank);
-    const levelClass = getLevelBadgeClass(guide.level);
-    const initial = (guide.displayName || 'U')[0].toUpperCase();
-
-    // Badges
-    let badges = '';
-    // Status badges (active = no badge, pending/approved = show badge)
-    if (guide.status === 'pending') {
-      badges += '<span class="leaderboard__badge leaderboard__badge--pending">PENDING</span>';
-    } else if (guide.status === 'approved') {
-      badges += '<span class="leaderboard__badge leaderboard__badge--syncing">SYNCING</span>';
+  // Check if current user is in the list
+  let myGuide = null;
+  let myRank = -1;
+  if (currentUser) {
+    myRank = data.findIndex(g => g.id === currentUser.uid || g.uid === currentUser.uid);
+    if (myRank >= 0) {
+      myGuide = data[myRank];
     }
-    // 'active' status = no badge (fully synced)
-    // Activity badges
-    if (guide.joinedThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--new">NEW</span>';
-    if (guide.leveledUpThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--levelup">LEVEL UP</span>';
-    if (guide.isGoogler) badges += '<span class="leaderboard__badge leaderboard__badge--googler">GOOGLER</span>';
+  }
 
-    // Top row class
-    let rowClass = 'leaderboard__row';
-    if (rank === 1) rowClass += ' leaderboard__row--top-1';
-    else if (rank === 2) rowClass += ' leaderboard__row--top-2';
-    else if (rank === 3) rowClass += ' leaderboard__row--top-3';
+  // Build pinned row if user is logged in but not in top visible positions
+  let pinnedHtml = '';
+  if (myGuide && myRank > 4) {
+    pinnedHtml = renderGuideRow(myGuide, myRank + 1, true);
+  }
 
-    return `
-      <div class="${rowClass}" data-id="${guide.id}" data-name="${guide.displayName}">
-        <div class="leaderboard__rank">
-          <span class="rank-badge ${rankClass}">${rank}</span>
-        </div>
-        <div class="leaderboard__user">
-          <div class="avatar">
-            ${guide.avatarUrl ? `<img src="${guide.avatarUrl}" alt="">` : initial}
-          </div>
-          <div class="leaderboard__user-info" data-stats="Lv.${guide.level} | ${formatCompactNumber(guide.points)} pts | ${formatCompactNumber(guide.reviewCount)} reviews">
-            <span class="leaderboard__user-name">${guide.displayName || 'Unknown'}</span>
-            <span class="leaderboard__user-country">${guide.country || ''}</span>
-          </div>
-          <div class="leaderboard__user-badges">${badges}</div>
-        </div>
-        <div class="leaderboard__level">
-          <span class="level-badge ${levelClass}">${guide.level}</span>
-        </div>
-        <div class="leaderboard__points">${formatCompactNumber(guide.points)}</div>
-        <div class="leaderboard__reviews">${formatCompactNumber(guide.reviewCount)}</div>
-        <div class="leaderboard__photos">${formatCompactNumber(guide.photoCount)}</div>
-      </div>
-    `;
-  }).join('');
+  const html = data.map((guide, index) => renderGuideRow(guide, index + 1, false)).join('');
 
-  elements.leaderboardBody.innerHTML = html;
+  elements.leaderboardBody.innerHTML = pinnedHtml + html;
 
   // Add click handlers for report
   elements.leaderboardBody.querySelectorAll('.leaderboard__row').forEach(row => {

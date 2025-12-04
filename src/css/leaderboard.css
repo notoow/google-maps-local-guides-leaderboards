@@ -95,6 +95,22 @@
   background: linear-gradient(90deg, rgba(217, 119, 6, 0.1) 0%, transparent 100%);
 }
 
+/* Pinned (My Profile) */
+.leaderboard__row--pinned {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.leaderboard__row--pinned .leaderboard__user-name {
+  color: var(--color-primary);
+  font-weight: var(--font-semibold);
+}
+
 /* Row Cells */
 .leaderboard__rank {
   display: flex;
