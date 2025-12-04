@@ -12,11 +12,7 @@ import {
   collection,
   doc,
   getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit
+  getDocs
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { formatCompactNumber, formatWithCommas, getLevelBadgeClass, getRankBadgeClass } from './utils/format-number.js';
 
@@ -103,10 +99,15 @@ function initAuth() {
       // Check admin status
       isAdmin = await checkAdminStatus(user.uid);
       elements.adminBtn.hidden = !isAdmin;
+
+      // Check if user is already registered - hide Join button
+      const isRegistered = await checkRegistrationStatus(user.uid);
+      elements.registerBtn.hidden = isRegistered;
     } else {
       elements.loginBtn.hidden = false;
       elements.userMenu.hidden = true;
       elements.adminBtn.hidden = true;
+      elements.registerBtn.hidden = false;
       isAdmin = false;
     }
   });
@@ -119,6 +120,17 @@ async function checkAdminStatus(uid) {
     return adminSnap.exists();
   } catch (error) {
     console.error('Admin check failed:', error);
+    return false;
+  }
+}
+
+async function checkRegistrationStatus(uid) {
+  try {
+    const guideRef = doc(db, 'guides', uid);
+    const guideSnap = await getDoc(guideRef);
+    return guideSnap.exists();
+  } catch (error) {
+    console.error('Registration check failed:', error);
     return false;
   }
 }
@@ -170,19 +182,16 @@ async function loadLeaderboard() {
 
   try {
     const guidesRef = collection(db, 'guides');
-    // Show all guides (pending, approved, scraped)
-    const q = query(
-      guidesRef,
-      orderBy('points', 'desc'),
-      limit(100)
-    );
-
-    const snapshot = await getDocs(q);
+    // Get all guides without ordering (avoid index requirement)
+    const snapshot = await getDocs(guidesRef);
     guides = [];
 
-    snapshot.forEach((doc) => {
-      guides.push({ id: doc.id, ...doc.data() });
+    snapshot.forEach((docSnap) => {
+      guides.push({ id: docSnap.id, ...docSnap.data() });
     });
+
+    // Sort client-side by points
+    guides.sort((a, b) => (b.points || 0) - (a.points || 0));
 
     // Calculate stats
     updateStats(guides);
