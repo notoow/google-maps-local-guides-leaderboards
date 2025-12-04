@@ -63,17 +63,17 @@ async function getGuidesToScrape(db) {
   return guides;
 }
 
-// URL 정규화 - 불필요한 파라미터 제거
+// URL 정규화 - /photos 페이지로 접속해야 프로필 정보가 표시됨
 function normalizeProfileUrl(url) {
-  // maps.app.goo.gl 단축 URL은 그대로 사용 (Playwright가 리다이렉트 처리)
+  // maps.app.goo.gl 단축 URL은 그대로 사용 (Playwright가 /photos 탭으로 리다이렉트)
   if (url.includes('maps.app.goo.gl')) {
     return url;
   }
 
-  // 정식 URL에서 contrib ID만 추출 (단축 URL 리다이렉트 대상과 동일한 형태)
+  // 정식 URL에서 contrib ID 추출 후 /photos 경로 추가
   const match = url.match(/google\.com\/maps\/contrib\/(\d+)/);
   if (match) {
-    return `https://www.google.com/maps/contrib/${match[1]}`;
+    return `https://www.google.com/maps/contrib/${match[1]}/photos`;
   }
 
   return url;
