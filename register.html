@@ -325,8 +325,8 @@
       onAuthStateChanged
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import {
-      collection,
-      addDoc,
+      doc,
+      setDoc,
       serverTimestamp
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
@@ -378,27 +378,26 @@
       submitBtn.textContent = 'Submitting...';
 
       try {
-        const formData = {
-          userId: currentUser.uid,
-          userEmail: currentUser.email,
-          type: 'new',
-          data: {
-            displayName: document.getElementById('displayName').value.trim(),
-            mapsProfileUrl: document.getElementById('mapsProfileUrl').value.trim(),
-            country: document.getElementById('country').value,
-            startDate: document.getElementById('startDate').value || null,
-            level: 1,
-            points: 0,
-            photoCount: 0,
-            photoViews: 0,
-            reviewCount: 0
-          },
-          status: 'pending',
+        // Save directly to guides collection with pending status
+        const guideData = {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: document.getElementById('displayName').value.trim(),
+          mapsProfileUrl: document.getElementById('mapsProfileUrl').value.trim(),
+          country: document.getElementById('country').value,
+          startDate: document.getElementById('startDate').value || null,
+          level: 1,
+          points: 0,
+          photoCount: 0,
+          photoViews: 0,
+          reviewCount: 0,
+          status: 'pending', // pending → approved (after admin) → scraped (after first scrape)
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
 
-        await addDoc(collection(db, 'submissions'), formData);
+        // Use user's UID as document ID
+        await setDoc(doc(db, 'guides', currentUser.uid), guideData);
 
         document.getElementById('registerForm').hidden = true;
         document.getElementById('successMessage').hidden = false;

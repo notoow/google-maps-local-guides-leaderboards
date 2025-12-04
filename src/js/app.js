@@ -170,9 +170,9 @@ async function loadLeaderboard() {
 
   try {
     const guidesRef = collection(db, 'guides');
+    // Show all guides (pending, approved, scraped)
     const q = query(
       guidesRef,
-      where('status', '==', 'approved'),
       orderBy('points', 'desc'),
       limit(100)
     );
@@ -246,6 +246,13 @@ function renderLeaderboard(data) {
 
     // Badges
     let badges = '';
+    // Status badges
+    if (guide.status === 'pending') {
+      badges += '<span class="leaderboard__badge leaderboard__badge--pending">PENDING</span>';
+    } else if (guide.status === 'approved') {
+      badges += '<span class="leaderboard__badge leaderboard__badge--syncing">SYNCING</span>';
+    }
+    // Activity badges
     if (guide.joinedThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--new">NEW</span>';
     if (guide.leveledUpThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--levelup">LEVEL UP</span>';
     if (guide.isGoogler) badges += '<span class="leaderboard__badge leaderboard__badge--googler">GOOGLER</span>';
