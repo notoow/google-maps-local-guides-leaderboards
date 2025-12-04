@@ -142,21 +142,50 @@ export async function parseProfile(page) {
       // 디버깅: .Qha3nb 요소들의 텍스트 저장
       result._debug_qha3nb = qha3nbTexts;
 
-      // 전체 텍스트 fallback
-      if (result.reviewCount === 0 || result.photoCount === 0) {
-        const allText = document.body.innerText;
+      // 전체 텍스트 fallback (더 강력한 패턴)
+      const allText = document.body.innerText;
 
-        if (result.reviewCount === 0) {
-          const reviewMatch = allText.match(/리뷰\s*([\d,]+)|([\d,]+)\s*reviews?/i);
-          if (reviewMatch) {
-            result.reviewCount = parseNumber(reviewMatch[1] || reviewMatch[2]);
+      if (result.reviewCount === 0) {
+        // "1,997 reviews" 또는 "리뷰 1,997개"
+        const reviewPatterns = [
+          /([\d,]+)\s*reviews?/i,
+          /리뷰\s*([\d,]+)/
+        ];
+        for (const pattern of reviewPatterns) {
+          const match = allText.match(pattern);
+          if (match) {
+            result.reviewCount = parseNumber(match[1]);
+            break;
           }
         }
+      }
 
-        if (result.photoCount === 0) {
-          const photoMatch = allText.match(/사진\s*([\d,]+)|([\d,]+)\s*photos?/i);
-          if (photoMatch) {
-            result.photoCount = parseNumber(photoMatch[1] || photoMatch[2]);
+      if (result.ratingCount === 0) {
+        // "81 ratings" 또는 "평가 81개"
+        const ratingPatterns = [
+          /([\d,]+)\s*ratings?/i,
+          /평가\s*([\d,]+)/
+        ];
+        for (const pattern of ratingPatterns) {
+          const match = allText.match(pattern);
+          if (match) {
+            result.ratingCount = parseNumber(match[1]);
+            break;
+          }
+        }
+      }
+
+      if (result.photoCount === 0) {
+        // "71,538 photos" 또는 "사진 71,538개"
+        const photoPatterns = [
+          /([\d,]+)\s*photos?/i,
+          /사진\s*([\d,]+)/
+        ];
+        for (const pattern of photoPatterns) {
+          const match = allText.match(pattern);
+          if (match) {
+            result.photoCount = parseNumber(match[1]);
+            break;
           }
         }
       }
