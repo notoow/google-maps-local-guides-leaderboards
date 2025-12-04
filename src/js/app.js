@@ -684,8 +684,8 @@ function updateCountdown() {
   elements.countdown.textContent = `${h}:${m}:${s}`;
 }
 
-// Quick Add Profile
-async function handleQuickAdd() {
+// Quick Add Profile (no login required - anyone can add any profile)
+function handleQuickAdd() {
   const url = elements.quickAddUrl?.value?.trim();
 
   if (!url) {
@@ -700,13 +700,7 @@ async function handleQuickAdd() {
     return;
   }
 
-  // Check if user is logged in
-  if (!currentUser) {
-    showToast('Please login first to add your profile', 'error');
-    return;
-  }
-
-  // Redirect to register page with URL
+  // Redirect to register page with URL (no login required)
   const encodedUrl = encodeURIComponent(url);
   window.location.href = `register.html?url=${encodedUrl}`;
 }
