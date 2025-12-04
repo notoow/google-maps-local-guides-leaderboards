@@ -350,8 +350,31 @@ function updateStats(data) {
   elements.totalReviews.textContent = formatCompactNumber(stats.totalReviews);
   elements.totalPhotos.textContent = formatCompactNumber(stats.totalPhotos);
 
-  // Last update
-  elements.lastUpdate.textContent = `Last updated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`;
+  // Find most recent updatedAt from guides
+  let lastUpdateTime = null;
+  data.forEach(g => {
+    if (g.updatedAt) {
+      const timestamp = g.updatedAt.toDate ? g.updatedAt.toDate() : new Date(g.updatedAt);
+      if (!lastUpdateTime || timestamp > lastUpdateTime) {
+        lastUpdateTime = timestamp;
+      }
+    }
+  });
+
+  // Format last update time
+  if (lastUpdateTime) {
+    const formatted = lastUpdateTime.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
+    elements.lastUpdate.textContent = `Last updated: ${formatted}`;
+  } else {
+    elements.lastUpdate.textContent = 'Last updated: -';
+  }
 }
 
 function renderGuideRow(guide, rank, isPinned = false) {
