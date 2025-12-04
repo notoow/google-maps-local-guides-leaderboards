@@ -112,7 +112,14 @@ async function scrapeGuideProfile(page, guide) {
       return null;
     }
 
-    console.log(`Scraped: Level ${profileData.level}, ${profileData.points} points`);
+    console.log(`Scraped: Level ${profileData.level}, ${profileData.points} points, ${profileData.reviewCount} reviews, ${profileData.ratingCount} ratings, ${profileData.photoCount} photos, ${profileData.photoViews} views`);
+
+    // 디버깅: .Qha3nb 요소들 출력
+    if (profileData._debug_qha3nb) {
+      console.log(`  .Qha3nb elements: ${JSON.stringify(profileData._debug_qha3nb)}`);
+      delete profileData._debug_qha3nb; // Firebase에 저장하지 않음
+    }
+
     return profileData;
 
   } catch (error) {
@@ -144,6 +151,7 @@ async function updateGuideData(db, guideId, oldData, newData) {
     level: newData.level,
     points: newData.points,
     reviewCount: newData.reviewCount,
+    ratingCount: newData.ratingCount || 0,
     photoCount: newData.photoCount,
     photoViews: newData.photoViews,
     videoCount: newData.videoCount || 0,

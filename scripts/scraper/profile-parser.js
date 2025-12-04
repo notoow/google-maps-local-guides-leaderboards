@@ -100,8 +100,10 @@ export async function parseProfile(page) {
       // ===== 리뷰/평가, 사진, 조회수 추출 =====
       // .Qha3nb 요소들에서 추출
       const qha3nbElements = document.querySelectorAll('.Qha3nb');
+      const qha3nbTexts = []; // 디버깅용
       for (const el of qha3nbElements) {
         const text = el.textContent.trim();
+        qha3nbTexts.push(text); // 디버깅용
 
         // 리뷰/평가: "리뷰 1,997개 · 평가 81개" 또는 "1,997 reviews · 81 ratings"
         if (text.includes('리뷰') || text.includes('평가') || text.toLowerCase().includes('review') || text.toLowerCase().includes('rating')) {
@@ -136,6 +138,9 @@ export async function parseProfile(page) {
           }
         }
       }
+
+      // 디버깅: .Qha3nb 요소들의 텍스트 저장
+      result._debug_qha3nb = qha3nbTexts;
 
       // 전체 텍스트 fallback
       if (result.reviewCount === 0 || result.photoCount === 0) {
