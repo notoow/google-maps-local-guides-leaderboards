@@ -17,6 +17,7 @@ export async function parseProfile(page) {
         level: 0,
         points: 0,
         reviewCount: 0,
+        ratingCount: 0,
         photoCount: 0,
         photoViews: 0,
         videoCount: 0,
@@ -103,13 +104,23 @@ export async function parseProfile(page) {
         const text = el.textContent.trim();
 
         // 리뷰/평가: "리뷰 1,997개 · 평가 81개" 또는 "1,997 reviews · 81 ratings"
-        if (text.includes('리뷰') || text.toLowerCase().includes('review')) {
-          const korMatch = text.match(/리뷰\s*([\d,]+)/);
-          const engMatch = text.match(/([\d,]+)\s*reviews?/i);
-          if (korMatch) {
-            result.reviewCount = parseNumber(korMatch[1]);
-          } else if (engMatch) {
-            result.reviewCount = parseNumber(engMatch[1]);
+        if (text.includes('리뷰') || text.includes('평가') || text.toLowerCase().includes('review') || text.toLowerCase().includes('rating')) {
+          // 리뷰 수
+          const korReviewMatch = text.match(/리뷰\s*([\d,]+)/);
+          const engReviewMatch = text.match(/([\d,]+)\s*reviews?/i);
+          if (korReviewMatch) {
+            result.reviewCount = parseNumber(korReviewMatch[1]);
+          } else if (engReviewMatch) {
+            result.reviewCount = parseNumber(engReviewMatch[1]);
+          }
+
+          // 평가 수
+          const korRatingMatch = text.match(/평가\s*([\d,]+)/);
+          const engRatingMatch = text.match(/([\d,]+)\s*ratings?/i);
+          if (korRatingMatch) {
+            result.ratingCount = parseNumber(korRatingMatch[1]);
+          } else if (engRatingMatch) {
+            result.ratingCount = parseNumber(engRatingMatch[1]);
           }
           continue;
         }
