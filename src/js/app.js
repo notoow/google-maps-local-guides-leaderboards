@@ -246,12 +246,13 @@ function renderLeaderboard(data) {
 
     // Badges
     let badges = '';
-    // Status badges
+    // Status badges (active = no badge, pending/approved = show badge)
     if (guide.status === 'pending') {
       badges += '<span class="leaderboard__badge leaderboard__badge--pending">PENDING</span>';
     } else if (guide.status === 'approved') {
       badges += '<span class="leaderboard__badge leaderboard__badge--syncing">SYNCING</span>';
     }
+    // 'active' status = no badge (fully synced)
     // Activity badges
     if (guide.joinedThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--new">NEW</span>';
     if (guide.leveledUpThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--levelup">LEVEL UP</span>';

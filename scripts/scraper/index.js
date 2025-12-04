@@ -26,10 +26,10 @@ function initFirebase() {
   return getFirestore();
 }
 
-// 승인된 가이드 목록 가져오기
-async function getApprovedGuides(db) {
+// 스크래핑 대상 가이드 목록 가져오기 (pending, approved, active)
+async function getGuidesToScrape(db) {
   const snapshot = await db.collection('guides')
-    .where('status', '==', 'approved')
+    .where('status', 'in', ['pending', 'approved', 'active'])
     .get();
 
   const guides = [];
@@ -43,7 +43,7 @@ async function getApprovedGuides(db) {
     }
   });
 
-  console.log(`Found ${guides.length} approved guides with profile URLs`);
+  console.log(`Found ${guides.length} guides to scrape`);
   return guides;
 }
 
@@ -96,7 +96,7 @@ async function updateGuideData(db, guideId, oldData, newData) {
   // 레벨업 여부
   const leveledUp = newData.level > (oldData.level || 0);
 
-  // 가이드 문서 업데이트
+  // 가이드 문서 업데이트 (status를 active로 변경)
   await guideRef.update({
     level: newData.level,
     points: newData.points,
@@ -112,6 +112,7 @@ async function updateGuideData(db, guideId, oldData, newData) {
     avgViewsPerPhoto,
     leveledUpThisMonth: leveledUp,
     joinedThisMonth: false,
+    status: 'active', // pending/approved → active after first scrape
     updatedAt: FieldValue.serverTimestamp()
   });
 
@@ -138,8 +139,8 @@ async function main() {
   // Firebase 초기화
   const db = initFirebase();
 
-  // 승인된 가이드 목록
-  const guides = await getApprovedGuides(db);
+  // 스크래핑 대상 가이드 목록
+  const guides = await getGuidesToScrape(db);
 
   if (guides.length === 0) {
     console.log('No guides to scrape');
