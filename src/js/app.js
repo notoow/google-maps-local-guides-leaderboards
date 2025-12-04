@@ -204,11 +204,7 @@ async function loadLeaderboard() {
 
 function loadDemoData() {
   guides = [
-    { id: '1', displayName: 'Demo User 1', level: 10, points: 150000, reviewCount: 500, photoCount: 2000, photoViews: 5000000, country: 'KR', avatarUrl: null, joinedThisMonth: false, leveledUpThisMonth: false, isGoogler: false },
-    { id: '2', displayName: 'Demo User 2', level: 9, points: 120000, reviewCount: 400, photoCount: 1500, photoViews: 3000000, country: 'US', avatarUrl: null, joinedThisMonth: true, leveledUpThisMonth: false, isGoogler: false },
-    { id: '3', displayName: 'Demo User 3', level: 10, points: 100000, reviewCount: 350, photoCount: 1200, photoViews: 2500000, country: 'JP', avatarUrl: null, joinedThisMonth: false, leveledUpThisMonth: true, isGoogler: false },
-    { id: '4', displayName: 'Demo User 4', level: 8, points: 80000, reviewCount: 300, photoCount: 1000, photoViews: 2000000, country: 'AU', avatarUrl: null, joinedThisMonth: false, leveledUpThisMonth: false, isGoogler: true },
-    { id: '5', displayName: 'Demo User 5', level: 8, points: 70000, reviewCount: 250, photoCount: 800, photoViews: 1500000, country: 'UK', avatarUrl: null, joinedThisMonth: false, leveledUpThisMonth: false, isGoogler: false },
+    { id: '1', displayName: 'Demo User', level: 1, points: 0, reviewCount: 0, photoCount: 0, photoViews: 0, country: '', avatarUrl: null, joinedThisMonth: false, leveledUpThisMonth: false, isGoogler: false },
   ];
 
   updateStats(guides);
