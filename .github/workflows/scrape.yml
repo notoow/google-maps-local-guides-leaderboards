@@ -8,6 +8,11 @@ on:
 
   # 수동 실행 가능
   workflow_dispatch:
+    inputs:
+      user_id:
+        description: 'Specific user ID to scrape (leave empty for all users)'
+        required: false
+        type: string
 
 jobs:
   scrape:
@@ -34,6 +39,7 @@ jobs:
         working-directory: scripts/scraper
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          TARGET_USER_ID: ${{ github.event.inputs.user_id }}
         run: node index.js
 
       - name: Get current date

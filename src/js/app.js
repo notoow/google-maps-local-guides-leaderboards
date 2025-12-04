@@ -374,9 +374,9 @@ function renderGuideRow(guide, rank, isPinned = false) {
       <div class="leaderboard__level">
         <span class="level-badge ${levelClass}">${guide.level}</span>
       </div>
-      <div class="leaderboard__points">${formatCompactNumber(guide.points)}</div>
-      <div class="leaderboard__reviews">${formatCompactNumber(guide.reviewCount)}</div>
-      <div class="leaderboard__photos">${formatCompactNumber(guide.photoCount)}</div>
+      <div class="leaderboard__points" title="${formatWithCommas(guide.points)}">${formatCompactNumber(guide.points)}</div>
+      <div class="leaderboard__reviews" title="${formatWithCommas(guide.reviewCount)}">${formatCompactNumber(guide.reviewCount)}</div>
+      <div class="leaderboard__photos" title="${formatWithCommas(guide.photoCount)}">${formatCompactNumber(guide.photoCount)}</div>
     </div>
   `;
 }

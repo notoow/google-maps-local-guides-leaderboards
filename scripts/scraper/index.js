@@ -42,8 +42,32 @@ function initFirebase() {
   return getFirestore();
 }
 
-// 스크래핑 대상 가이드 목록 가져오기 (pending, approved, active)
+// 스크래핑 대상 가이드 목록 가져오기
 async function getGuidesToScrape(db) {
+  const targetUserId = process.env.TARGET_USER_ID;
+
+  // 특정 유저만 스크래핑
+  if (targetUserId) {
+    console.log(`Single user mode: ${targetUserId}`);
+    const docRef = db.collection('guides').doc(targetUserId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      console.log(`User ${targetUserId} not found`);
+      return [];
+    }
+
+    const data = docSnap.data();
+    if (!data.mapsProfileUrl) {
+      console.log(`User ${targetUserId} has no mapsProfileUrl`);
+      return [];
+    }
+
+    console.log(`Found 1 guide to scrape: ${data.displayName}`);
+    return [{ id: docSnap.id, ...data }];
+  }
+
+  // 전체 스크래핑 (기존 로직)
   const snapshot = await db.collection('guides')
     .where('status', 'in', ['pending', 'approved', 'active'])
     .get();

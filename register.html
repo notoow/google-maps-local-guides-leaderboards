@@ -379,6 +379,33 @@
       return patterns.some(pattern => pattern.test(url));
     }
 
+    // GitHub Actions 트리거 (본인 데이터만 스크래핑)
+    async function triggerScrape(userId) {
+      try {
+        const response = await fetch(
+          'https://api.github.com/repos/notoow/google-maps-local-guides-leaderboards/actions/workflows/scrape.yml/dispatches',
+          {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/vnd.github.v3+json',
+              'Authorization': 'token ghp_GITHUB_TOKEN_HERE', // TODO: 실제 토큰으로 교체 또는 서버리스 함수 사용
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ref: 'main',
+              inputs: { user_id: userId }
+            })
+          }
+        );
+        if (response.ok) {
+          console.log('Scrape triggered for user:', userId);
+        }
+      } catch (error) {
+        console.error('Failed to trigger scrape:', error);
+        // 실패해도 가입은 완료됨
+      }
+    }
+
     // Form Submit
     document.getElementById('form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -422,6 +449,9 @@
 
         // Use user's UID as document ID
         await setDoc(doc(db, 'guides', currentUser.uid), guideData);
+
+        // 가입 완료 후 스크래핑 트리거 (백그라운드)
+        triggerScrape(currentUser.uid);
 
         document.getElementById('registerForm').hidden = true;
         document.getElementById('successMessage').hidden = false;

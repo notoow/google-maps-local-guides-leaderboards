@@ -1,0 +1,23 @@
+# Local Guides Leaderboard - robots.txt
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://notoow.github.io/google-maps-local-guides-leaderboards/sitemap.xml
+
+# AI Crawlers (ChatGPT, Bing AI, etc.)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Yeti
+Allow: /
