@@ -23,7 +23,8 @@ let currentUser = null;
 let isAdmin = false;
 let guides = [];
 let filteredGuides = [];
-let currentSort = { field: 'points', direction: 'desc' };
+let currentSort = { field: 'photoViews', direction: 'desc' };
+let countdownInterval = null;
 
 // DOM Elements
 const elements = {
@@ -67,7 +68,14 @@ const elements = {
   reportReason: document.getElementById('reportReason'),
   reportDetail: document.getElementById('reportDetail'),
   cancelReportBtn: document.getElementById('cancelReportBtn'),
-  submitReportBtn: document.getElementById('submitReportBtn')
+  submitReportBtn: document.getElementById('submitReportBtn'),
+
+  // Quick Add
+  quickAddUrl: document.getElementById('quickAddUrl'),
+  quickAddBtn: document.getElementById('quickAddBtn'),
+
+  // Countdown
+  countdown: document.getElementById('countdown')
 };
 
 // Initialize
@@ -76,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuth();
   initEventListeners();
   loadLeaderboard();
+  initCountdown();
 });
 
 // Theme
@@ -262,6 +271,12 @@ function initEventListeners() {
   elements.reportModal?.querySelector('.modal__close')?.addEventListener('click', closeReportModal);
   elements.cancelReportBtn?.addEventListener('click', closeReportModal);
   elements.submitReportBtn?.addEventListener('click', handleSubmitReport);
+
+  // Quick Add
+  elements.quickAddBtn?.addEventListener('click', handleQuickAdd);
+  elements.quickAddUrl?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleQuickAdd();
+  });
 }
 
 // Leaderboard
@@ -280,8 +295,13 @@ async function loadLeaderboard() {
 
     console.log('Loaded guides:', guides.length);
 
-    // Sort client-side by points
-    guides.sort((a, b) => (b.points || 0) - (a.points || 0));
+    // Calculate avgViewsPerPhoto for each guide
+    guides.forEach(g => {
+      g.avgViewsPerPhoto = g.photoCount > 0 ? Math.round((g.photoViews || 0) / g.photoCount) : 0;
+    });
+
+    // Sort client-side by photoViews (default)
+    guides.sort((a, b) => (b.photoViews || 0) - (a.photoViews || 0));
 
     // Calculate stats
     updateStats(guides);
@@ -333,6 +353,10 @@ function renderGuideRow(guide, rank, isPinned = false) {
   const levelClass = getLevelBadgeClass(guide.level);
   const initial = (guide.displayName || 'U')[0].toUpperCase();
 
+  // Calculate avgViewsPerPhoto if not present
+  const avgViewsPerPhoto = guide.avgViewsPerPhoto ||
+    (guide.photoCount > 0 ? Math.round((guide.photoViews || 0) / guide.photoCount) : 0);
+
   // Badges
   let badges = '';
   if (guide.status === 'pending') {
@@ -365,18 +389,20 @@ function renderGuideRow(guide, rank, isPinned = false) {
         <div class="avatar">
           ${guide.avatarUrl ? `<img src="${guide.avatarUrl}" alt="">` : initial}
         </div>
-        <div class="leaderboard__user-info" data-stats="Lv.${guide.level} | ${formatCompactNumber(guide.points)} pts | ${formatCompactNumber(guide.reviewCount)} reviews">
+        <div class="leaderboard__user-info">
           <span class="leaderboard__user-name">${guide.displayName || 'Unknown'}${isPinned ? ' (You)' : ''}</span>
           <span class="leaderboard__user-country" data-country="${guide.country || ''}">${guide.country || ''}</span>
         </div>
         <div class="leaderboard__user-badges">${badges}</div>
       </div>
       <div class="leaderboard__level">
-        <span class="level-badge ${levelClass}">${guide.level}</span>
+        <span class="level-badge ${levelClass}">${guide.level || 0}</span>
       </div>
-      <div class="leaderboard__points" title="${formatWithCommas(guide.points)}">${formatCompactNumber(guide.points)}</div>
-      <div class="leaderboard__reviews" title="${formatWithCommas(guide.reviewCount)}">${formatCompactNumber(guide.reviewCount)}</div>
-      <div class="leaderboard__photos" title="${formatWithCommas(guide.photoCount)}">${formatCompactNumber(guide.photoCount)}</div>
+      <div class="leaderboard__photo-views" title="${formatWithCommas(guide.photoViews || 0)}">${formatCompactNumber(guide.photoViews || 0)}</div>
+      <div class="leaderboard__photos" title="${formatWithCommas(guide.photoCount || 0)}">${formatCompactNumber(guide.photoCount || 0)}</div>
+      <div class="leaderboard__avg-views" title="${formatWithCommas(avgViewsPerPhoto)}">${formatCompactNumber(avgViewsPerPhoto)}</div>
+      <div class="leaderboard__points" title="${formatWithCommas(guide.points || 0)}">${formatCompactNumber(guide.points || 0)}</div>
+      <div class="leaderboard__reviews" title="${formatWithCommas(guide.reviewCount || 0)}">${formatCompactNumber(guide.reviewCount || 0)}</div>
     </div>
   `;
 }
@@ -614,4 +640,66 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
+}
+
+// Countdown Timer
+function initCountdown() {
+  updateCountdown();
+  countdownInterval = setInterval(updateCountdown, 1000);
+}
+
+function updateCountdown() {
+  if (!elements.countdown) return;
+
+  const now = new Date();
+  const utcHour = now.getUTCHours();
+  const utcMinute = now.getUTCMinutes();
+  const utcSecond = now.getUTCSeconds();
+
+  // Next update times: UTC 03:00 and 15:00 (KST 12:00 and 00:00)
+  let nextUpdateHour;
+  if (utcHour < 3) {
+    nextUpdateHour = 3;
+  } else if (utcHour < 15) {
+    nextUpdateHour = 15;
+  } else {
+    nextUpdateHour = 27; // 다음날 03:00 (24 + 3)
+  }
+
+  const hoursLeft = nextUpdateHour - utcHour - 1;
+  const minutesLeft = 59 - utcMinute;
+  const secondsLeft = 59 - utcSecond;
+
+  const h = String(hoursLeft).padStart(2, '0');
+  const m = String(minutesLeft).padStart(2, '0');
+  const s = String(secondsLeft).padStart(2, '0');
+
+  elements.countdown.textContent = `${h}:${m}:${s}`;
+}
+
+// Quick Add Profile
+async function handleQuickAdd() {
+  const url = elements.quickAddUrl?.value?.trim();
+
+  if (!url) {
+    showToast('Please enter a Google Maps profile URL', 'error');
+    return;
+  }
+
+  // Validate URL format
+  const isValidUrl = url.includes('google.com/maps/contrib/') || url.includes('maps.app.goo.gl');
+  if (!isValidUrl) {
+    showToast('Please enter a valid Google Maps profile URL', 'error');
+    return;
+  }
+
+  // Check if user is logged in
+  if (!currentUser) {
+    showToast('Please login first to add your profile', 'error');
+    return;
+  }
+
+  // Redirect to register page with URL
+  const encodedUrl = encodeURIComponent(url);
+  window.location.href = `register.html?url=${encodedUrl}`;
 }

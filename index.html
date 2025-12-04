@@ -154,7 +154,34 @@
         <section class="hero">
           <h1 class="hero__title">Local Guides Leaderboard</h1>
           <p class="hero__subtitle">Google Maps 로컬 가이드들의 기여도를 추적하고 순위를 확인하세요</p>
-          <p class="hero__update" id="lastUpdate">Last updated: -</p>
+          <div class="hero__update-wrapper">
+            <p class="hero__update" id="lastUpdate">Last updated: -</p>
+            <div class="hero__next-update" id="nextUpdate">
+              <span class="hero__update-label">Next update in</span>
+              <span class="hero__countdown" id="countdown">--:--:--</span>
+            </div>
+          </div>
+
+          <!-- Quick Add Profile -->
+          <div class="hero__quick-add">
+            <div class="quick-add">
+              <input
+                type="url"
+                class="quick-add__input"
+                id="quickAddUrl"
+                placeholder="https://www.google.com/maps/contrib/..."
+                aria-label="Google Maps profile URL"
+              >
+              <button class="btn btn--primary quick-add__btn" id="quickAddBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>Add Profile</span>
+              </button>
+            </div>
+            <p class="quick-add__hint">Paste your Google Maps profile URL to join the leaderboard</p>
+          </div>
         </section>
 
         <!-- Stats Overview -->
@@ -257,7 +284,7 @@
         <section class="leaderboard" aria-label="Leaderboard">
           <div class="leaderboard__header">
             <button class="leaderboard__col leaderboard__col--rank leaderboard__sort-btn" data-sort="rank">
-              Rank
+              #
               <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
                 <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
@@ -265,13 +292,34 @@
             </button>
             <span class="leaderboard__col leaderboard__col--user">Guide</span>
             <button class="leaderboard__col leaderboard__col--level leaderboard__sort-btn" data-sort="level">
-              Level
+              Lv
               <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
                 <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
               </svg>
             </button>
-            <button class="leaderboard__col leaderboard__col--points leaderboard__sort-btn active" data-sort="points">
+            <button class="leaderboard__col leaderboard__col--photo-views leaderboard__sort-btn active" data-sort="photoViews">
+              Views
+              <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
+                <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+            </button>
+            <button class="leaderboard__col leaderboard__col--photos leaderboard__sort-btn" data-sort="photoCount">
+              Photos
+              <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
+                <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+            </button>
+            <button class="leaderboard__col leaderboard__col--avg-views leaderboard__sort-btn" data-sort="avgViewsPerPhoto">
+              V/P
+              <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
+                <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+            </button>
+            <button class="leaderboard__col leaderboard__col--points leaderboard__sort-btn" data-sort="points">
               Points
               <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
@@ -280,13 +328,6 @@
             </button>
             <button class="leaderboard__col leaderboard__col--reviews leaderboard__sort-btn" data-sort="reviewCount">
               Reviews
-              <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
-                <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
-              </svg>
-            </button>
-            <button class="leaderboard__col leaderboard__col--photos leaderboard__sort-btn" data-sort="photoCount">
-              Photos
               <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
                 <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>

@@ -6,13 +6,16 @@
 
   .leaderboard__header,
   .leaderboard__row {
-    grid-template-columns: 60px 1fr 60px 100px;
+    grid-template-columns: 40px 1fr 40px 80px 70px;
   }
 
+  /* 태블릿에서 숨기기: V/P, Points, Reviews */
+  .leaderboard__col--avg-views,
+  .leaderboard__col--points,
   .leaderboard__col--reviews,
-  .leaderboard__col--photos,
-  .leaderboard__reviews,
-  .leaderboard__photos {
+  .leaderboard__avg-views,
+  .leaderboard__points,
+  .leaderboard__reviews {
     display: none;
   }
 }
@@ -119,15 +122,19 @@
   .leaderboard__level,
   .leaderboard__points,
   .leaderboard__reviews,
-  .leaderboard__photos {
+  .leaderboard__photos,
+  .leaderboard__photo-views,
+  .leaderboard__avg-views {
     display: none;
   }
 
-  .leaderboard__user-info::after {
-    content: attr(data-stats);
-    font-size: var(--text-xs);
-    color: var(--color-text-tertiary);
-    margin-top: var(--space-1);
+  /* Quick Add - Mobile */
+  .quick-add {
+    flex-direction: column;
+  }
+
+  .quick-add__btn {
+    width: 100%;
   }
 
   .modal__content {
