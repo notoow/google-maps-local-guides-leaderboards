@@ -30,8 +30,8 @@ export async function parseProfile(page) {
       // 숫자 파싱 헬퍼
       const parseNumber = (text) => {
         if (!text) return 0;
-        // "1,234" -> 1234, "71,538" -> 71538, "230,686,853" -> 230686853
-        text = text.trim().replace(/,/g, '').replace(/개$/, '');
+        // "1,234" -> 1234, "71,538" -> 71538, "648,975점" -> 648975
+        text = text.trim().replace(/,/g, '').replace(/[개점장]$/, '');
 
         if (text.includes('K') || text.includes('천')) {
           return Math.round(parseFloat(text) * 1000);
@@ -46,24 +46,23 @@ export async function parseProfile(page) {
         return parseInt(text) || 0;
       };
 
-      const allText = document.body.innerText;
-
       // ===== 레벨 추출 =====
-      // 방법 1: DOM 셀렉터 (div.PMkhac 영역)
-      const levelContainer = document.querySelector('.PMkhac, .qLPauf');
-      if (levelContainer) {
-        const levelMatch = levelContainer.textContent.match(/Level\s*(\d+)|레벨\s*(\d+)/i);
+      // 방법 1: .FNyx3 셀렉터 (예: "지역 가이드 레벨 10")
+      const levelEl = document.querySelector('.FNyx3');
+      if (levelEl) {
+        const levelMatch = levelEl.textContent.match(/레벨\s*(\d+)|Level\s*(\d+)/i);
         if (levelMatch) {
           result.level = parseInt(levelMatch[1] || levelMatch[2]);
         }
       }
 
-      // 방법 2: 전체 텍스트에서 "Level X Local Guide" 패턴
+      // 방법 2: 전체 텍스트 fallback
       if (result.level === 0) {
+        const allText = document.body.innerText;
         const levelPatterns = [
-          /Level\s*(\d+)\s*Local Guide/i,
           /레벨\s*(\d+)/,
-          /LV\.?\s*(\d+)/i
+          /Level\s*(\d+)\s*Local Guide/i,
+          /Level\s*(\d+)/i
         ];
         for (const pattern of levelPatterns) {
           const match = allText.match(pattern);
@@ -75,107 +74,73 @@ export async function parseProfile(page) {
       }
 
       // ===== 포인트 추출 =====
-      const pointsPatterns = [
-        /(\d[\d,]*)\s*points?/i,
-        /(\d[\d,]*)\s*포인트/,
-        /points?\s*[:\s]*(\d[\d,]*)/i
-      ];
-
-      for (const pattern of pointsPatterns) {
-        const match = allText.match(pattern);
-        if (match) {
-          result.points = parseNumber(match[1] || match[2]);
-          break;
-        }
+      // 방법 1: .VEEl9c 셀렉터 (예: "648,975점")
+      const pointsEl = document.querySelector('.VEEl9c');
+      if (pointsEl) {
+        result.points = parseNumber(pointsEl.textContent);
       }
 
-      // ===== 리뷰/평가 추출 =====
-      // "리뷰 1,997개 평가 81개" 또는 "1,997 reviews 81 ratings"
-      const reviewSection = document.querySelector('.TiFmlb, .iAEkYb');
-      if (reviewSection) {
-        const reviewText = reviewSection.textContent;
-        // 한국어: "리뷰 1,997개"
-        const korReviewMatch = reviewText.match(/리뷰\s*([\d,]+)/);
-        if (korReviewMatch) {
-          result.reviewCount = parseNumber(korReviewMatch[1]);
-        }
-        // 영어: "1,997 reviews"
-        const engReviewMatch = reviewText.match(/([\d,]+)\s*reviews?/i);
-        if (engReviewMatch && result.reviewCount === 0) {
-          result.reviewCount = parseNumber(engReviewMatch[1]);
-        }
-      }
-
-      // 전체 텍스트 fallback
-      if (result.reviewCount === 0) {
-        const reviewPatterns = [
-          /리뷰\s*([\d,]+)/,
-          /([\d,]+)\s*reviews?/i
+      // 방법 2: 전체 텍스트 fallback
+      if (result.points === 0) {
+        const allText = document.body.innerText;
+        const pointsPatterns = [
+          /([\d,]+)\s*점/,
+          /([\d,]+)\s*points?/i
         ];
-        for (const pattern of reviewPatterns) {
+        for (const pattern of pointsPatterns) {
           const match = allText.match(pattern);
           if (match) {
-            result.reviewCount = parseNumber(match[1]);
+            result.points = parseNumber(match[1]);
             break;
           }
         }
       }
 
-      // ===== 사진/조회수 추출 =====
-      // "사진 71,538 조회수 230,686,853개"
-      const photoSection = document.querySelector('.iAEkYb');
-      if (photoSection) {
-        const photoText = photoSection.textContent;
-        // 한국어
-        const korPhotoMatch = photoText.match(/사진\s*([\d,]+)/);
-        if (korPhotoMatch) {
-          result.photoCount = parseNumber(korPhotoMatch[1]);
+      // ===== 리뷰/평가, 사진, 조회수 추출 =====
+      // .Qha3nb 요소들에서 추출
+      const qha3nbElements = document.querySelectorAll('.Qha3nb');
+      for (const el of qha3nbElements) {
+        const text = el.textContent.trim();
+
+        // 리뷰/평가: "리뷰 1,997개 · 평가 81개" 또는 "1,997 reviews · 81 ratings"
+        if (text.includes('리뷰') || text.toLowerCase().includes('review')) {
+          const korMatch = text.match(/리뷰\s*([\d,]+)/);
+          const engMatch = text.match(/([\d,]+)\s*reviews?/i);
+          if (korMatch) {
+            result.reviewCount = parseNumber(korMatch[1]);
+          } else if (engMatch) {
+            result.reviewCount = parseNumber(engMatch[1]);
+          }
+          continue;
         }
-        const korViewsMatch = photoText.match(/조회수\s*([\d,]+)/);
-        if (korViewsMatch) {
-          result.photoViews = parseNumber(korViewsMatch[1]);
-        }
-        // 영어
-        const engPhotoMatch = photoText.match(/([\d,]+)\s*photos?/i);
-        if (engPhotoMatch && result.photoCount === 0) {
-          result.photoCount = parseNumber(engPhotoMatch[1]);
-        }
-        const engViewsMatch = photoText.match(/([\d,]+)\s*views?/i);
-        if (engViewsMatch && result.photoViews === 0) {
-          result.photoViews = parseNumber(engViewsMatch[1]);
+
+        // 순수 숫자만 있는 경우 (사진 수 또는 조회수)
+        // 사진 수와 조회수는 순서대로 나옴: 먼저 사진 수, 다음 조회수
+        if (/^[\d,]+$/.test(text)) {
+          const num = parseNumber(text);
+          if (result.photoCount === 0) {
+            result.photoCount = num;
+          } else if (result.photoViews === 0) {
+            result.photoViews = num;
+          }
         }
       }
 
       // 전체 텍스트 fallback
-      if (result.photoCount === 0) {
-        const match = allText.match(/사진\s*([\d,]+)|([\d,]+)\s*photos?/i);
-        if (match) {
-          result.photoCount = parseNumber(match[1] || match[2]);
-        }
-      }
-      if (result.photoViews === 0) {
-        const match = allText.match(/조회수\s*([\d,]+)|([\d,]+)\s*views?/i);
-        if (match) {
-          result.photoViews = parseNumber(match[1] || match[2]);
-        }
-      }
+      if (result.reviewCount === 0 || result.photoCount === 0) {
+        const allText = document.body.innerText;
 
-      // ===== 기타 기여 통계 =====
-      const contributionPatterns = {
-        videoCount: [/([\d,]+)\s*videos?/i, /동영상\s*([\d,]+)/],
-        edits: [/([\d,]+)\s*edits?/i, /수정\s*([\d,]+)/],
-        placesAdded: [/([\d,]+)\s*places?\s*added/i, /추가된 장소\s*([\d,]+)/],
-        roadsAdded: [/([\d,]+)\s*roads?\s*added/i, /추가된 도로\s*([\d,]+)/],
-        factsAdded: [/([\d,]+)\s*facts?/i, /팩트\s*([\d,]+)/],
-        questionsAnswered: [/([\d,]+)\s*answers?/i, /([\d,]+)\s*Q&A/i, /답변\s*([\d,]+)/]
-      };
+        if (result.reviewCount === 0) {
+          const reviewMatch = allText.match(/리뷰\s*([\d,]+)|([\d,]+)\s*reviews?/i);
+          if (reviewMatch) {
+            result.reviewCount = parseNumber(reviewMatch[1] || reviewMatch[2]);
+          }
+        }
 
-      for (const [key, patterns] of Object.entries(contributionPatterns)) {
-        for (const pattern of patterns) {
-          const match = allText.match(pattern);
-          if (match) {
-            result[key] = parseNumber(match[1]);
-            break;
+        if (result.photoCount === 0) {
+          const photoMatch = allText.match(/사진\s*([\d,]+)|([\d,]+)\s*photos?/i);
+          if (photoMatch) {
+            result.photoCount = parseNumber(photoMatch[1] || photoMatch[2]);
           }
         }
       }
