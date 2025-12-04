@@ -384,11 +384,11 @@
       });
     });
 
-    // Load Submissions
+    // Load Submissions (from guides collection with status: pending)
     async function loadSubmissions() {
       try {
         const q = query(
-          collection(db, 'submissions'),
+          collection(db, 'guides'),
           where('status', '==', 'pending'),
           orderBy('createdAt', 'asc')
         );
@@ -416,20 +416,20 @@
           <div class="admin__item" data-id="${sub.id}">
             <div class="admin__item-content">
               <div class="admin__item-header">
-                <span class="admin__item-name">${sub.data?.displayName || 'Unknown'}</span>
-                <span class="admin__item-email">${sub.userEmail}</span>
+                <span class="admin__item-name">${sub.displayName || 'Unknown'}</span>
+                <span class="admin__item-email">${sub.email}</span>
                 <span class="badge badge--pending">Pending</span>
                 <span class="admin__item-date">${formatDate(sub.createdAt)}</span>
               </div>
               <div class="admin__item-details">
                 <strong>Maps Profile:</strong>
-                <a href="${sub.data?.mapsProfileUrl}" target="_blank">${sub.data?.mapsProfileUrl}</a>
+                <a href="${sub.mapsProfileUrl}" target="_blank">${sub.mapsProfileUrl}</a>
                 <br>
-                <strong>Country:</strong> ${sub.data?.country || 'N/A'}
+                <strong>Country:</strong> ${sub.country || 'N/A'}
               </div>
             </div>
             <div class="admin__item-actions">
-              <button class="btn btn--primary btn--sm" onclick="approveSubmission('${sub.id}', '${sub.userId}')">
+              <button class="btn btn--primary btn--sm" onclick="approveSubmission('${sub.id}')">
                 Approve
               </button>
               <button class="btn btn--danger btn--sm" onclick="rejectSubmission('${sub.id}')">
@@ -506,33 +506,17 @@
       }
     }
 
-    // Approve Submission
-    window.approveSubmission = async (submissionId, userId) => {
+    // Approve Submission (update guide status to approved)
+    window.approveSubmission = async (guideId) => {
       if (!confirm('Approve this registration?')) return;
 
       try {
-        // Get submission data
-        const subRef = doc(db, 'submissions', submissionId);
-        const subSnap = await getDoc(subRef);
-        const submission = subSnap.data();
-
-        // Create/update guide document
-        const guideRef = doc(db, 'guides', userId);
-        await setDoc(guideRef, {
-          odLxTydGbcKN2: odLxTydGbcKN2,
-          odLxTydGbcKN2: submission.userEmail,
-          ...submission.data,
+        const guideRef = doc(db, 'guides', guideId);
+        await updateDoc(guideRef, {
           status: 'approved',
           approvedAt: serverTimestamp(),
-          createdAt: serverTimestamp(),
+          approvedBy: currentUser.uid,
           updatedAt: serverTimestamp()
-        }, { merge: true });
-
-        // Update submission status
-        await updateDoc(subRef, {
-          status: 'approved',
-          reviewedBy: currentUser.uid,
-          reviewedAt: serverTimestamp()
         });
 
         alert('Registration approved!');
@@ -544,19 +528,12 @@
       }
     };
 
-    // Reject Submission
-    window.rejectSubmission = async (submissionId) => {
-      const reason = prompt('Rejection reason:');
-      if (!reason) return;
+    // Reject Submission (delete guide document)
+    window.rejectSubmission = async (guideId) => {
+      if (!confirm('Reject and delete this registration?')) return;
 
       try {
-        await updateDoc(doc(db, 'submissions', submissionId), {
-          status: 'rejected',
-          rejectReason: reason,
-          reviewedBy: currentUser.uid,
-          reviewedAt: serverTimestamp()
-        });
-
+        await deleteDoc(doc(db, 'guides', guideId));
         alert('Registration rejected');
         loadSubmissions();
 
