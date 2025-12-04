@@ -235,18 +235,6 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="displayName">Display Name *</label>
-                  <input
-                    type="text"
-                    id="displayName"
-                    name="displayName"
-                    placeholder="Your name on the leaderboard"
-                    required
-                    maxlength="50"
-                  >
-                </div>
-
-                <div class="form-group">
                   <label for="country">Country *</label>
                   <select id="country" name="country" required>
                     <option value="">Select your country</option>
@@ -352,10 +340,6 @@
       currentUser = user;
       document.getElementById('loginRequired').hidden = !!user;
       document.getElementById('registerForm').hidden = !user;
-
-      if (user) {
-        document.getElementById('displayName').value = user.displayName || '';
-      }
     });
 
     document.getElementById('loginBtn').addEventListener('click', async () => {
@@ -429,11 +413,12 @@
 
       try {
         // Save directly to guides collection with approved status (auto-approve)
+        // displayName will be fetched from Google Maps profile by scraper
         const guideData = {
           uid: currentUser.uid,
           email: currentUser.email,
           avatarUrl: currentUser.photoURL || null,
-          displayName: document.getElementById('displayName').value.trim(),
+          displayName: 'Loading...', // Will be updated by scraper from Google Maps profile
           mapsProfileUrl: mapsProfileUrl,
           country: document.getElementById('country').value,
           startDate: document.getElementById('startDate').value || null,

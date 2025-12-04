@@ -14,6 +14,7 @@ export async function parseProfile(page) {
     // 프로필 데이터 추출
     const data = await page.evaluate(() => {
       const result = {
+        displayName: null,
         level: 0,
         points: 0,
         reviewCount: 0,
@@ -27,6 +28,13 @@ export async function parseProfile(page) {
         factsAdded: 0,
         questionsAnswered: 0
       };
+
+      // ===== 이름 추출 =====
+      // h1.geAzIe 셀렉터 (프로필 이름)
+      const nameEl = document.querySelector('h1.geAzIe');
+      if (nameEl) {
+        result.displayName = nameEl.textContent.trim();
+      }
 
       // 숫자 파싱 헬퍼
       const parseNumber = (text) => {

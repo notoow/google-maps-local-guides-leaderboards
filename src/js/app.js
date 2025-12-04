@@ -14,7 +14,11 @@ import {
   getDoc,
   getDocs,
   deleteDoc,
-  updateDoc
+  updateDoc,
+  setDoc,
+  serverTimestamp,
+  query,
+  where
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { formatCompactNumber, formatWithCommas, getLevelBadgeClass, getRankBadgeClass } from './utils/format-number.js';
 
@@ -61,7 +65,7 @@ const elements = {
   loadingState: document.getElementById('loadingState'),
   emptyState: document.getElementById('emptyState'),
 
-  // Modal
+  // Report Modal
   reportModal: document.getElementById('reportModal'),
   reportTargetId: document.getElementById('reportTargetId'),
   reportTargetName: document.getElementById('reportTargetName'),
@@ -69,6 +73,13 @@ const elements = {
   reportDetail: document.getElementById('reportDetail'),
   cancelReportBtn: document.getElementById('cancelReportBtn'),
   submitReportBtn: document.getElementById('submitReportBtn'),
+
+  // Claim Modal
+  claimModal: document.getElementById('claimModal'),
+  claimTargetId: document.getElementById('claimTargetId'),
+  claimCountry: document.getElementById('claimCountry'),
+  cancelClaimBtn: document.getElementById('cancelClaimBtn'),
+  submitClaimBtn: document.getElementById('submitClaimBtn'),
 
   // Quick Add
   quickAddUrl: document.getElementById('quickAddUrl'),
@@ -266,11 +277,17 @@ function initEventListeners() {
     btn.addEventListener('click', () => handleHeaderSort(btn));
   });
 
-  // Modal
+  // Report Modal
   elements.reportModal?.querySelector('.modal__backdrop')?.addEventListener('click', closeReportModal);
   elements.reportModal?.querySelector('.modal__close')?.addEventListener('click', closeReportModal);
   elements.cancelReportBtn?.addEventListener('click', closeReportModal);
   elements.submitReportBtn?.addEventListener('click', handleSubmitReport);
+
+  // Claim Modal
+  elements.claimModal?.querySelector('.modal__backdrop')?.addEventListener('click', closeClaimModal);
+  elements.claimModal?.querySelector('.modal__close')?.addEventListener('click', closeClaimModal);
+  elements.cancelClaimBtn?.addEventListener('click', closeClaimModal);
+  elements.submitClaimBtn?.addEventListener('click', handleSubmitClaim);
 
   // Quick Add
   elements.quickAddBtn?.addEventListener('click', handleQuickAdd);
@@ -393,6 +410,10 @@ function renderGuideRow(guide, rank, isPinned = false) {
   } else if (guide.status === 'approved') {
     badges += '<span class="leaderboard__badge leaderboard__badge--syncing">SYNCING</span>';
   }
+  // Show "Submit" badge if no country (needs to claim/verify profile)
+  if (!guide.country) {
+    badges += '<span class="leaderboard__badge leaderboard__badge--submit">SUBMIT</span>';
+  }
   if (guide.joinedThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--new">NEW</span>';
   if (guide.leveledUpThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--levelup">LEVEL UP</span>';
   if (guide.isGoogler) badges += '<span class="leaderboard__badge leaderboard__badge--googler">GOOGLER</span>';
@@ -466,12 +487,30 @@ function renderLeaderboard(data) {
 
   elements.leaderboardBody.innerHTML = pinnedHtml + html;
 
-  // Add click handlers for report
+  // Add click handlers for rows
   elements.leaderboardBody.querySelectorAll('.leaderboard__row').forEach(row => {
+    // Right-click for report
     row.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       if (currentUser) {
         openReportModal(row.dataset.id, row.dataset.name);
+      }
+    });
+
+    // Left-click for claim (if user is logged in and name matches)
+    row.addEventListener('click', (e) => {
+      // Don't trigger if clicking on country
+      if (e.target.closest('.leaderboard__user-country')) return;
+
+      const guideId = row.dataset.id;
+      const guideName = row.dataset.name;
+
+      // Check if user can claim this profile
+      if (currentUser && canClaimProfile(guideName)) {
+        const guide = guides.find(g => g.id === guideId);
+        if (guide) {
+          openClaimModal(guideId, guide.country);
+        }
       }
     });
   });
@@ -486,6 +525,17 @@ function renderLeaderboard(data) {
       }
     });
   });
+}
+
+// Check if logged-in user can claim this profile (name matching)
+function canClaimProfile(guideName) {
+  if (!currentUser || !guideName) return false;
+
+  const googleName = currentUser.displayName?.toLowerCase().trim();
+  const mapsName = guideName.toLowerCase().trim();
+
+  // Exact match or close match
+  return googleName === mapsName;
 }
 
 // Search & Filter
@@ -589,6 +639,55 @@ function filterByCountry(country) {
 
   applySort();
   renderLeaderboard(filteredGuides);
+}
+
+// Claim Modal
+function openClaimModal(guideId, currentCountry) {
+  elements.claimTargetId.value = guideId;
+  elements.claimCountry.value = currentCountry || '';
+  elements.claimModal.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeClaimModal() {
+  elements.claimModal.hidden = true;
+  document.body.style.overflow = '';
+  elements.claimCountry.value = '';
+}
+
+async function handleSubmitClaim() {
+  if (!currentUser) {
+    showToast('Please login first', 'error');
+    return;
+  }
+
+  const guideId = elements.claimTargetId.value;
+  const country = elements.claimCountry.value;
+
+  if (!country) {
+    showToast('Please select a country', 'error');
+    return;
+  }
+
+  try {
+    // Update the guide document with country and link to user
+    const guideRef = doc(db, 'guides', guideId);
+    await updateDoc(guideRef, {
+      country: country,
+      claimedBy: currentUser.uid,
+      claimedAt: serverTimestamp()
+    });
+
+    showToast('Profile claimed successfully!', 'success');
+    closeClaimModal();
+
+    // Reload to show updated data
+    await loadLeaderboard();
+
+  } catch (error) {
+    console.error('Claim failed:', error);
+    showToast('Failed to claim profile: ' + error.message, 'error');
+  }
 }
 
 // Report Modal
@@ -707,8 +806,15 @@ function updateCountdown() {
   elements.countdown.textContent = `${h}:${m}:${s}`;
 }
 
-// Quick Add Profile (no login required - anyone can add any profile)
-function handleQuickAdd() {
+// Extract contrib ID from Google Maps profile URL
+function extractContribId(url) {
+  // https://www.google.com/maps/contrib/123456789012345678901/...
+  const match = url.match(/google\.com\/maps\/contrib\/(\d+)/);
+  return match ? match[1] : null;
+}
+
+// Quick Add Profile (no login required - directly saves to Firestore)
+async function handleQuickAdd() {
   const url = elements.quickAddUrl?.value?.trim();
 
   if (!url) {
@@ -723,7 +829,56 @@ function handleQuickAdd() {
     return;
   }
 
-  // Redirect to register page with URL (no login required)
-  const encodedUrl = encodeURIComponent(url);
-  window.location.href = `register.html?url=${encodedUrl}`;
+  // Extract contrib ID for document ID
+  const contribId = extractContribId(url);
+  if (!contribId) {
+    showToast('Could not extract profile ID from URL. Please use the full profile URL.', 'error');
+    return;
+  }
+
+  // Check if already exists
+  const existingDoc = await getDoc(doc(db, 'guides', contribId));
+  if (existingDoc.exists()) {
+    showToast('This profile is already on the leaderboard!', 'error');
+    return;
+  }
+
+  // Disable button while saving
+  const btn = elements.quickAddBtn;
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span>Adding...</span>';
+
+  try {
+    // Save directly to guides collection (no country, no displayName - scraper will fill these)
+    const guideData = {
+      mapsProfileUrl: url,
+      displayName: 'Loading...', // Will be updated by scraper
+      country: '', // Empty - user can claim and set country later
+      level: 0,
+      points: 0,
+      photoCount: 0,
+      photoViews: 0,
+      reviewCount: 0,
+      status: 'approved', // Will become 'active' after first scrape
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    // Use contrib ID as document ID
+    await setDoc(doc(db, 'guides', contribId), guideData);
+
+    showToast('Profile added! Data will be synced shortly.', 'success');
+    elements.quickAddUrl.value = '';
+
+    // Reload leaderboard to show new entry
+    await loadLeaderboard();
+
+  } catch (error) {
+    console.error('Failed to add profile:', error);
+    showToast('Failed to add profile: ' + error.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
 }

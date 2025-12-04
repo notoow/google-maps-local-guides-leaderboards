@@ -5,6 +5,7 @@
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-border);
   overflow: hidden;
+  margin-bottom: var(--space-12);
 }
 
 /* Header Row */
@@ -242,6 +243,11 @@
 .leaderboard__badge--syncing {
   background-color: #dbeafe;
   color: #2563eb;
+}
+
+.leaderboard__badge--submit {
+  background-color: #f3e8ff;
+  color: #7c3aed;
 }
 
 .leaderboard__level {

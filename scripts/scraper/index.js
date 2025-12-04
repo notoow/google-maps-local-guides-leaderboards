@@ -189,6 +189,7 @@ async function scrapeGuideProfile(page, guide) {
 
     // 두 페이지 데이터 병합 (각 페이지에서 더 나은 값 사용)
     const mergedData = {
+      displayName: photosData?.displayName || reviewsData?.displayName || null,
       level: photosData?.level || reviewsData?.level || 0,
       points: photosData?.points || reviewsData?.points || 0,
       reviewCount: reviewsData?.reviewCount || photosData?.reviewCount || 0,
@@ -232,7 +233,7 @@ async function updateGuideData(db, guideId, oldData, newData) {
   const leveledUp = newData.level > (oldData.level || 0);
 
   // 가이드 문서 업데이트 (status를 active로 변경)
-  await guideRef.update({
+  const updateData = {
     level: newData.level,
     points: newData.points,
     reviewCount: newData.reviewCount,
@@ -250,7 +251,14 @@ async function updateGuideData(db, guideId, oldData, newData) {
     joinedThisMonth: false,
     status: 'active', // pending/approved → active after first scrape
     updatedAt: FieldValue.serverTimestamp()
-  });
+  };
+
+  // displayName이 파싱되었으면 업데이트
+  if (newData.displayName) {
+    updateData.displayName = newData.displayName;
+  }
+
+  await guideRef.update(updateData);
 
   // 이력 저장 (서브컬렉션)
   const historyRef = guideRef.collection('history').doc(monthKey);
