@@ -38,6 +38,7 @@ const elements = {
   userDropdownTrigger: document.getElementById('userDropdownTrigger'),
   userDropdownMenu: document.getElementById('userDropdownMenu'),
   deleteAccountBtn: document.getElementById('deleteAccountBtn'),
+  authLoading: document.getElementById('authLoading'),
 
   // Theme
   themeToggle: document.getElementById('themeToggle'),
@@ -95,6 +96,11 @@ function toggleTheme() {
 function initAuth() {
   onAuthStateChanged(auth, async (user) => {
     currentUser = user;
+
+    // 인증 로딩 숨기기
+    if (elements.authLoading) {
+      elements.authLoading.hidden = true;
+    }
 
     if (user) {
       elements.loginBtn.hidden = true;
