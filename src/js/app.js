@@ -361,7 +361,7 @@ function renderGuideRow(guide, rank, isPinned = false) {
         </div>
         <div class="leaderboard__user-info" data-stats="Lv.${guide.level} | ${formatCompactNumber(guide.points)} pts | ${formatCompactNumber(guide.reviewCount)} reviews">
           <span class="leaderboard__user-name">${guide.displayName || 'Unknown'}${isPinned ? ' (You)' : ''}</span>
-          <span class="leaderboard__user-country">${guide.country || ''}</span>
+          <span class="leaderboard__user-country" data-country="${guide.country || ''}">${guide.country || ''}</span>
         </div>
         <div class="leaderboard__user-badges">${badges}</div>
       </div>
@@ -410,6 +410,17 @@ function renderLeaderboard(data) {
       e.preventDefault();
       if (currentUser) {
         openReportModal(row.dataset.id, row.dataset.name);
+      }
+    });
+  });
+
+  // Add click handlers for country filter
+  elements.leaderboardBody.querySelectorAll('.leaderboard__user-country').forEach(countryEl => {
+    countryEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const country = countryEl.dataset.country;
+      if (country) {
+        filterByCountry(country);
       }
     });
   });
@@ -473,9 +484,12 @@ function updateSortButtons() {
 function applySort() {
   const { field, direction } = currentSort;
 
+  // rank 정렬은 points 기준으로 정렬 (rank는 points 순위이므로)
+  const sortField = field === 'rank' ? 'points' : field;
+
   filteredGuides.sort((a, b) => {
-    const aVal = a[field] || 0;
-    const bVal = b[field] || 0;
+    const aVal = a[sortField] || 0;
+    const bVal = b[sortField] || 0;
     return direction === 'desc' ? bVal - aVal : aVal - bVal;
   });
 }
@@ -489,6 +503,26 @@ function handleFilter() {
     filteredGuides = guides.filter(g => g.level <= 5);
   } else {
     filteredGuides = guides.filter(g => g.level === parseInt(level));
+  }
+
+  applySort();
+  renderLeaderboard(filteredGuides);
+}
+
+// State for country filter
+let currentCountryFilter = null;
+
+function filterByCountry(country) {
+  // Toggle: 같은 국가 다시 클릭하면 필터 해제
+  if (currentCountryFilter === country) {
+    currentCountryFilter = null;
+    filteredGuides = [...guides];
+    elements.searchInput.value = '';
+  } else {
+    currentCountryFilter = country;
+    filteredGuides = guides.filter(g => g.country === country);
+    // 검색창에 국가 표시
+    elements.searchInput.value = country;
   }
 
   applySort();
