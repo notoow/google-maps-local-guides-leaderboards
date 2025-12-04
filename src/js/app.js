@@ -300,14 +300,20 @@ async function loadLeaderboard() {
       g.avgViewsPerPhoto = g.photoCount > 0 ? Math.round((g.photoViews || 0) / g.photoCount) : 0;
     });
 
-    // Sort client-side by photoViews (default)
-    guides.sort((a, b) => (b.photoViews || 0) - (a.photoViews || 0));
+    // Sort by points first to assign absolute ranks
+    guides.sort((a, b) => (b.points || 0) - (a.points || 0));
+
+    // Assign absolute rank based on points (this rank never changes)
+    guides.forEach((g, index) => {
+      g.absoluteRank = index + 1;
+    });
 
     // Calculate stats
     updateStats(guides);
 
-    // Apply initial sort and render
+    // Apply initial sort (photoViews) and render
     filteredGuides = [...guides];
+    applySort();
     renderLeaderboard(filteredGuides);
 
   } catch (error) {
@@ -323,7 +329,7 @@ async function loadLeaderboard() {
 
 function loadDemoData() {
   guides = [
-    { id: '1', displayName: 'Demo User', level: 1, points: 0, reviewCount: 0, photoCount: 0, photoViews: 0, country: '', avatarUrl: null, joinedThisMonth: false, leveledUpThisMonth: false, isGoogler: false },
+    { id: '1', displayName: 'Demo User', level: 1, points: 0, reviewCount: 0, photoCount: 0, photoViews: 0, country: '', avatarUrl: null, joinedThisMonth: false, leveledUpThisMonth: false, isGoogler: false, absoluteRank: 1 },
   ];
 
   updateStats(guides);
@@ -429,10 +435,11 @@ function renderLeaderboard(data) {
   // Build pinned row if user is logged in but not in top visible positions
   let pinnedHtml = '';
   if (myGuide && myRank > 4) {
-    pinnedHtml = renderGuideRow(myGuide, myRank + 1, true);
+    pinnedHtml = renderGuideRow(myGuide, myGuide.absoluteRank, true);
   }
 
-  const html = data.map((guide, index) => renderGuideRow(guide, index + 1, false)).join('');
+  // Use absoluteRank (points-based) instead of display index
+  const html = data.map((guide) => renderGuideRow(guide, guide.absoluteRank, false)).join('');
 
   elements.leaderboardBody.innerHTML = pinnedHtml + html;
 
