@@ -12,7 +12,8 @@ import {
   collection,
   doc,
   getDoc,
-  getDocs
+  getDocs,
+  deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { formatCompactNumber, formatWithCommas, getLevelBadgeClass, getRankBadgeClass } from './utils/format-number.js';
 
@@ -32,6 +33,9 @@ const elements = {
   userName: document.getElementById('userName'),
   registerBtn: document.getElementById('registerBtn'),
   adminBtn: document.getElementById('adminBtn'),
+  userDropdownTrigger: document.getElementById('userDropdownTrigger'),
+  userDropdownMenu: document.getElementById('userDropdownMenu'),
+  deleteAccountBtn: document.getElementById('deleteAccountBtn'),
 
   // Theme
   themeToggle: document.getElementById('themeToggle'),
@@ -147,6 +151,7 @@ async function handleLogin() {
 
 async function handleLogout() {
   try {
+    closeUserDropdown();
     await signOut(auth);
     showToast('Logged out successfully', 'success');
   } catch (error) {
@@ -155,11 +160,65 @@ async function handleLogout() {
   }
 }
 
+// User Dropdown
+function toggleUserDropdown(e) {
+  e.stopPropagation();
+  const isHidden = elements.userDropdownMenu.hidden;
+  elements.userDropdownMenu.hidden = !isHidden;
+}
+
+function closeUserDropdown() {
+  if (elements.userDropdownMenu) {
+    elements.userDropdownMenu.hidden = true;
+  }
+}
+
+// Delete Account
+async function handleDeleteAccount() {
+  if (!currentUser) return;
+
+  const confirmed = confirm(
+    'Are you sure you want to delete your account?\n\n' +
+    'This will remove your profile from the leaderboard.\n' +
+    'This action cannot be undone.'
+  );
+
+  if (!confirmed) return;
+
+  try {
+    closeUserDropdown();
+
+    // Delete guide document from Firestore
+    const guideRef = doc(db, 'guides', currentUser.uid);
+    await deleteDoc(guideRef);
+
+    // Sign out
+    await signOut(auth);
+
+    showToast('Account deleted successfully', 'success');
+
+    // Reload leaderboard
+    loadLeaderboard();
+  } catch (error) {
+    console.error('Delete account failed:', error);
+    showToast('Failed to delete account: ' + error.message, 'error');
+  }
+}
+
 // Event Listeners
 function initEventListeners() {
   // Auth
   elements.loginBtn?.addEventListener('click', handleLogin);
   elements.logoutBtn?.addEventListener('click', handleLogout);
+  elements.deleteAccountBtn?.addEventListener('click', handleDeleteAccount);
+
+  // User dropdown
+  elements.userDropdownTrigger?.addEventListener('click', toggleUserDropdown);
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.header__user-dropdown')) {
+      closeUserDropdown();
+    }
+  });
 
   // Theme
   elements.themeToggle?.addEventListener('click', toggleTheme);
