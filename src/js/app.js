@@ -836,9 +836,17 @@ async function handleQuickAdd() {
     return;
   }
 
-  // Check if already exists
+  // Check if already exists (by document ID or by URL)
   const existingDoc = await getDoc(doc(db, 'guides', contribId));
   if (existingDoc.exists()) {
+    showToast('This profile is already on the leaderboard!', 'error');
+    return;
+  }
+
+  // Also check if URL already exists in any document (for older registrations with uid as doc ID)
+  const urlQuery = query(collection(db, 'guides'), where('mapsProfileUrl', '==', url));
+  const urlSnapshot = await getDocs(urlQuery);
+  if (!urlSnapshot.empty) {
     showToast('This profile is already on the leaderboard!', 'error');
     return;
   }
