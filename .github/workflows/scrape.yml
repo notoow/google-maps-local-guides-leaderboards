@@ -1,9 +1,10 @@
-name: Monthly Scrape
+name: Daily Scrape
 
 on:
-  # 매월 1일 00:00 UTC에 실행
+  # 매일 00:00, 12:00 KST에 실행 (UTC 기준 15:00, 03:00)
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: '0 3 * * *'
+    - cron: '0 15 * * *'
 
   # 수동 실행 가능
   workflow_dispatch:
@@ -50,5 +51,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add -A
-          git diff --quiet && git diff --staged --quiet || git commit -m "🔄 Monthly data update - ${{ steps.date.outputs.date }}"
+          git diff --quiet && git diff --staged --quiet || git commit -m "Daily data update - ${{ steps.date.outputs.date }}"
           git push
