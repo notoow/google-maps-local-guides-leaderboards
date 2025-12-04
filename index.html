@@ -223,10 +223,34 @@
           <div class="leaderboard__header">
             <span class="leaderboard__col leaderboard__col--rank">Rank</span>
             <span class="leaderboard__col leaderboard__col--user">Guide</span>
-            <span class="leaderboard__col leaderboard__col--level">Level</span>
-            <span class="leaderboard__col leaderboard__col--points">Points</span>
-            <span class="leaderboard__col leaderboard__col--reviews">Reviews</span>
-            <span class="leaderboard__col leaderboard__col--photos">Photos</span>
+            <button class="leaderboard__col leaderboard__col--level leaderboard__sort-btn" data-sort="level">
+              Level
+              <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
+                <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+            </button>
+            <button class="leaderboard__col leaderboard__col--points leaderboard__sort-btn active" data-sort="points">
+              Points
+              <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
+                <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+            </button>
+            <button class="leaderboard__col leaderboard__col--reviews leaderboard__sort-btn" data-sort="reviewCount">
+              Reviews
+              <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
+                <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+            </button>
+            <button class="leaderboard__col leaderboard__col--photos leaderboard__sort-btn" data-sort="photoCount">
+              Photos
+              <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path class="sort-asc" d="M12 19V5M5 12l7-7 7 7"/>
+                <path class="sort-desc" d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+            </button>
           </div>
 
           <div class="leaderboard__body" id="leaderboardBody">

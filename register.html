@@ -367,6 +367,18 @@
       }
     });
 
+    // URL Validation
+    function isValidMapsProfileUrl(url) {
+      // 허용되는 URL 패턴:
+      // 1. https://www.google.com/maps/contrib/... (정식 URL)
+      // 2. https://maps.app.goo.gl/... (단축 URL)
+      const patterns = [
+        /^https?:\/\/(www\.)?google\.com\/maps\/contrib\/\d+/i,
+        /^https?:\/\/maps\.app\.goo\.gl\/.+/i
+      ];
+      return patterns.some(pattern => pattern.test(url));
+    }
+
     // Form Submit
     document.getElementById('form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -376,18 +388,26 @@
         return;
       }
 
+      const mapsProfileUrl = document.getElementById('mapsProfileUrl').value.trim();
+
+      // URL 형식 검증
+      if (!isValidMapsProfileUrl(mapsProfileUrl)) {
+        alert('Invalid Maps Profile URL.\n\nPlease use one of these formats:\n• https://www.google.com/maps/contrib/...\n• https://maps.app.goo.gl/...');
+        return;
+      }
+
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
 
       try {
-        // Save directly to guides collection with pending status
+        // Save directly to guides collection with approved status (auto-approve)
         const guideData = {
           uid: currentUser.uid,
           email: currentUser.email,
           avatarUrl: currentUser.photoURL || null,
           displayName: document.getElementById('displayName').value.trim(),
-          mapsProfileUrl: document.getElementById('mapsProfileUrl').value.trim(),
+          mapsProfileUrl: mapsProfileUrl,
           country: document.getElementById('country').value,
           startDate: document.getElementById('startDate').value || null,
           level: 1,
@@ -395,7 +415,7 @@
           photoCount: 0,
           photoViews: 0,
           reviewCount: 0,
-          status: 'pending', // pending → approved (after admin) → scraped (after first scrape)
+          status: 'approved', // auto-approved → active (after first scrape)
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };

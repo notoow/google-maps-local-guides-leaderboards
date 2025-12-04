@@ -23,6 +23,7 @@ let currentUser = null;
 let isAdmin = false;
 let guides = [];
 let filteredGuides = [];
+let currentSort = { field: 'points', direction: 'desc' };
 
 // DOM Elements
 const elements = {
@@ -245,6 +246,11 @@ function initEventListeners() {
   elements.sortBy?.addEventListener('change', handleSort);
   elements.filterLevel?.addEventListener('change', handleFilter);
 
+  // Table Header Sort
+  document.querySelectorAll('.leaderboard__sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => handleHeaderSort(btn));
+  });
+
   // Modal
   elements.reportModal?.querySelector('.modal__backdrop')?.addEventListener('click', closeReportModal);
   elements.reportModal?.querySelector('.modal__close')?.addEventListener('click', closeReportModal);
@@ -427,17 +433,50 @@ function handleSearch(e) {
 }
 
 function handleSort() {
+  const sortBy = elements.sortBy.value;
+  currentSort = { field: sortBy, direction: 'desc' };
+  updateSortButtons();
   applySort();
   renderLeaderboard(filteredGuides);
 }
 
+function handleHeaderSort(btn) {
+  const field = btn.dataset.sort;
+
+  // Toggle direction if same field, otherwise default to desc
+  if (currentSort.field === field) {
+    currentSort.direction = currentSort.direction === 'desc' ? 'asc' : 'desc';
+  } else {
+    currentSort.field = field;
+    currentSort.direction = 'desc';
+  }
+
+  updateSortButtons();
+  applySort();
+  renderLeaderboard(filteredGuides);
+}
+
+function updateSortButtons() {
+  document.querySelectorAll('.leaderboard__sort-btn').forEach(btn => {
+    btn.classList.remove('active', 'asc', 'desc');
+    if (btn.dataset.sort === currentSort.field) {
+      btn.classList.add('active', currentSort.direction);
+    }
+  });
+
+  // Sync dropdown if exists
+  if (elements.sortBy) {
+    elements.sortBy.value = currentSort.field;
+  }
+}
+
 function applySort() {
-  const sortBy = elements.sortBy.value;
+  const { field, direction } = currentSort;
 
   filteredGuides.sort((a, b) => {
-    const aVal = a[sortBy] || 0;
-    const bVal = b[sortBy] || 0;
-    return bVal - aVal;
+    const aVal = a[field] || 0;
+    const bVal = b[field] || 0;
+    return direction === 'desc' ? bVal - aVal : aVal - bVal;
   });
 }
 

@@ -38,6 +38,60 @@
   justify-content: center;
 }
 
+/* Sort Buttons */
+.leaderboard__sort-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  margin: calc(var(--space-1) * -1);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.leaderboard__sort-btn:hover {
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+.leaderboard__sort-btn.active {
+  color: var(--color-primary);
+}
+
+.leaderboard__sort-btn .sort-icon {
+  opacity: 0.3;
+  transition: opacity var(--transition-fast);
+}
+
+.leaderboard__sort-btn:hover .sort-icon,
+.leaderboard__sort-btn.active .sort-icon {
+  opacity: 1;
+}
+
+/* Sort Icon Arrows */
+.leaderboard__sort-btn .sort-asc,
+.leaderboard__sort-btn .sort-desc {
+  display: none;
+}
+
+.leaderboard__sort-btn.active.asc .sort-asc {
+  display: block;
+}
+
+.leaderboard__sort-btn.active.desc .sort-desc,
+.leaderboard__sort-btn.active:not(.asc) .sort-desc {
+  display: block;
+}
+
 /* Body */
 .leaderboard__body {
   max-height: 700px;

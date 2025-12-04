@@ -63,19 +63,46 @@ async function getGuidesToScrape(db) {
   return guides;
 }
 
+// URL 정규화 - 불필요한 파라미터 제거
+function normalizeProfileUrl(url) {
+  // maps.app.goo.gl 단축 URL은 그대로 사용 (Playwright가 리다이렉트 처리)
+  if (url.includes('maps.app.goo.gl')) {
+    return url;
+  }
+
+  // 정식 URL에서 contrib ID만 추출
+  const match = url.match(/google\.com\/maps\/contrib\/(\d+)/);
+  if (match) {
+    return `https://www.google.com/maps/contrib/${match[1]}/contribute`;
+  }
+
+  return url;
+}
+
 // 가이드 프로필 스크래핑
 async function scrapeGuideProfile(page, guide) {
-  const url = guide.mapsProfileUrl;
+  const originalUrl = guide.mapsProfileUrl;
+  const url = normalizeProfileUrl(originalUrl);
   console.log(`Scraping: ${guide.displayName} - ${url}`);
 
   try {
+    // 1차 시도: domcontentloaded (더 빠름)
     await page.goto(url, {
-      waitUntil: 'networkidle',
-      timeout: 30000
+      waitUntil: 'domcontentloaded',
+      timeout: 60000
     });
 
-    // 페이지 로드 대기
-    await page.waitForTimeout(2000);
+    // 페이지 안정화 대기
+    await page.waitForTimeout(3000);
+
+    // 프로필 컨텐츠가 로드될 때까지 대기
+    try {
+      await page.waitForSelector('[data-section-id="contributions"]', { timeout: 10000 });
+    } catch {
+      // 셀렉터를 못 찾아도 진행 (다른 구조일 수 있음)
+      console.log(`Waiting for content to stabilize...`);
+      await page.waitForTimeout(2000);
+    }
 
     // 프로필 데이터 추출
     const profileData = await parseProfile(page);
