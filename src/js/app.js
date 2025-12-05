@@ -445,7 +445,7 @@ function renderGuideRow(guide, rank, isPinned = false) {
         </div>
         <div class="leaderboard__user-info">
           <span class="leaderboard__user-name">${guide.displayName || 'Unknown'}${isPinned ? ' (You)' : ''}</span>
-          <span class="leaderboard__user-country" data-country="${guide.country || ''}">${guide.country || ''}</span>
+          <span class="leaderboard__user-country ${!guide.country ? 'leaderboard__user-country--empty' : ''}" data-country="${guide.country || ''}">${guide.country || 'Set country'}</span>
         </div>
         <div class="leaderboard__user-badges">${badges}</div>
       </div>
@@ -519,13 +519,31 @@ function renderLeaderboard(data) {
     });
   });
 
-  // Add click handlers for country filter
+  // Add click handlers for country filter / claim
   elements.leaderboardBody.querySelectorAll('.leaderboard__user-country').forEach(countryEl => {
     countryEl.addEventListener('click', (e) => {
       e.stopPropagation();
       const country = countryEl.dataset.country;
+      const row = countryEl.closest('.leaderboard__row');
+      const guideId = row?.dataset.id;
+      const guideName = row?.dataset.name;
+
       if (country) {
+        // Has country - filter by it
         filterByCountry(country);
+      } else {
+        // No country - show claim guidance
+        if (!currentUser) {
+          showToast('Log in with Google to claim this profile', 'info');
+        } else if (!canClaimProfile(guideName)) {
+          showToast('Your Google name must match the profile name to claim', 'info');
+        } else {
+          // Can claim - open modal
+          const guide = guides.find(g => g.id === guideId);
+          if (guide) {
+            openClaimModal(guideId, guide.country);
+          }
+        }
       }
     });
   });
