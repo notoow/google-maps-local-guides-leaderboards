@@ -294,6 +294,15 @@ function initEventListeners() {
   elements.quickAddUrl?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleQuickAdd();
   });
+
+  // Refresh Button (event delegation)
+  elements.leaderboardBody?.addEventListener('click', (e) => {
+    const refreshBtn = e.target.closest('.leaderboard__refresh-btn');
+    if (refreshBtn) {
+      e.stopPropagation();
+      handleRefreshMyData(refreshBtn);
+    }
+  });
 }
 
 // Leaderboard
@@ -418,6 +427,24 @@ function renderGuideRow(guide, rank, isPinned = false) {
   if (guide.leveledUpThisMonth) badges += '<span class="leaderboard__badge leaderboard__badge--levelup">LEVEL UP</span>';
   if (guide.isGoogler) badges += '<span class="leaderboard__badge leaderboard__badge--googler">GOOGLER</span>';
 
+  // Refresh button for pinned row (my profile)
+  let refreshButton = '';
+  if (isPinned) {
+    const remaining = getRemainingRefreshes();
+    const isDisabled = remaining <= 0;
+    const buttonText = isDisabled ? 'Limit reached' : `Refresh (${remaining} left)`;
+
+    refreshButton = `
+      <button class="leaderboard__refresh-btn" data-guide-id="${guide.id}" title="Refresh my data (${remaining}/${DAILY_REFRESH_LIMIT} remaining today)" ${isDisabled ? 'disabled' : ''}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+        <span>${buttonText}</span>
+      </button>
+    `;
+  }
+
   // Row class
   let rowClass = 'leaderboard__row';
   if (isPinned) {
@@ -448,6 +475,7 @@ function renderGuideRow(guide, rank, isPinned = false) {
           <span class="leaderboard__user-country ${!guide.country ? 'leaderboard__user-country--empty' : ''}" data-country="${guide.country || ''}">${guide.country || 'Set country'}</span>
         </div>
         <div class="leaderboard__user-badges">${badges}</div>
+        ${refreshButton}
       </div>
       <div class="leaderboard__level">
         <span class="level-badge ${levelClass}">${guide.level || 0}</span>
@@ -954,5 +982,81 @@ async function handleQuickAdd() {
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalText;
+  }
+}
+
+// Daily refresh limit (2 times per day)
+const DAILY_REFRESH_LIMIT = 2;
+
+function getRefreshKey() {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  return `refresh_count_${today}`;
+}
+
+function getRefreshCount() {
+  const key = getRefreshKey();
+  return parseInt(localStorage.getItem(key) || '0', 10);
+}
+
+function incrementRefreshCount() {
+  const key = getRefreshKey();
+  const count = getRefreshCount() + 1;
+  localStorage.setItem(key, count.toString());
+  return count;
+}
+
+function getRemainingRefreshes() {
+  return Math.max(0, DAILY_REFRESH_LIMIT - getRefreshCount());
+}
+
+// Handle Refresh My Data button click
+async function handleRefreshMyData(btn) {
+  if (!currentUser) {
+    showToast('Please login first', 'error');
+    return;
+  }
+
+  const guideId = btn.dataset.guideId;
+  if (!guideId) {
+    showToast('Invalid guide ID', 'error');
+    return;
+  }
+
+  // Check daily limit
+  const remaining = getRemainingRefreshes();
+  if (remaining <= 0) {
+    showToast('Daily limit reached (2/day). Try again tomorrow!', 'error');
+    return;
+  }
+
+  // Disable button and show loading
+  btn.disabled = true;
+  btn.classList.add('leaderboard__refresh-btn--loading');
+  const originalText = btn.querySelector('span').textContent;
+  btn.querySelector('span').textContent = 'Refreshing...';
+
+  try {
+    // Trigger scraper for this user
+    const success = await triggerScraper(guideId);
+
+    if (success) {
+      // Increment count only on success
+      incrementRefreshCount();
+      const newRemaining = getRemainingRefreshes();
+      showToast(`Data refresh started! (${newRemaining}/${DAILY_REFRESH_LIMIT} remaining today)`, 'success');
+
+      // Update button text to show remaining
+      btn.querySelector('span').textContent = `Refresh (${newRemaining} left)`;
+    } else {
+      showToast('Failed to start refresh. Please try again.', 'error');
+      btn.querySelector('span').textContent = originalText;
+    }
+  } catch (error) {
+    console.error('Refresh error:', error);
+    showToast('Failed to refresh: ' + error.message, 'error');
+    btn.querySelector('span').textContent = originalText;
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('leaderboard__refresh-btn--loading');
   }
 }
