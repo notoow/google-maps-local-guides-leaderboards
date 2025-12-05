@@ -444,7 +444,7 @@ function renderGuideRow(guide, rank, isPinned = false) {
           ${guide.avatarUrl ? `<img src="${guide.avatarUrl}" alt="">` : initial}
         </div>
         <div class="leaderboard__user-info">
-          <a href="https://www.google.com/maps/contrib/${guide.id}" target="_blank" rel="noopener" class="leaderboard__user-name">${guide.displayName || 'Unknown'}${isPinned ? ' (You)' : ''}</a>
+          <a href="${guide.mapsProfileUrl || '#'}" target="_blank" rel="noopener" class="leaderboard__user-name">${guide.displayName || 'Unknown'}${isPinned ? ' (You)' : ''}</a>
           <span class="leaderboard__user-country ${!guide.country ? 'leaderboard__user-country--empty' : ''}" data-country="${guide.country || ''}">${guide.country || 'Set country'}</span>
         </div>
         <div class="leaderboard__user-badges">${badges}</div>
