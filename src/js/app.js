@@ -515,7 +515,13 @@ function renderLeaderboard(data) {
   }
 
   // Use absoluteRank (points-based) instead of display index
-  const html = data.map((guide) => renderGuideRow(guide, guide.absoluteRank, false)).join('');
+  // Mark user's own row for refresh button (only in regular list if not pinned)
+  const html = data.map((guide) => {
+    const isOwn = currentUser && (guide.id === currentUser.uid || guide.uid === currentUser.uid);
+    // Show as pinned (with refresh btn) if it's user's row AND not already in pinned section
+    const showAsOwn = isOwn && myRank <= 4;
+    return renderGuideRow(guide, guide.absoluteRank, showAsOwn);
+  }).join('');
 
   elements.leaderboardBody.innerHTML = pinnedHtml + html;
 
