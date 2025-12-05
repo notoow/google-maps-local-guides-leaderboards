@@ -500,28 +500,19 @@ function renderLeaderboard(data) {
 
   // Check if current user is in the list
   let myGuide = null;
-  let myRank = -1;
   if (currentUser) {
-    myRank = data.findIndex(g => g.id === currentUser.uid || g.uid === currentUser.uid);
-    if (myRank >= 0) {
-      myGuide = data[myRank];
-    }
+    myGuide = data.find(g => g.id === currentUser.uid || g.uid === currentUser.uid);
   }
 
-  // Build pinned row if user is logged in but not in top visible positions
+  // Always show pinned row at top if user is in the leaderboard
+  // UX best practice: user's rank should always be visible (sticky)
   let pinnedHtml = '';
-  if (myGuide && myRank > 4) {
+  if (myGuide) {
     pinnedHtml = renderGuideRow(myGuide, myGuide.absoluteRank, true);
   }
 
-  // Use absoluteRank (points-based) instead of display index
-  // Mark user's own row for refresh button (only in regular list if not pinned)
-  const html = data.map((guide) => {
-    const isOwn = currentUser && (guide.id === currentUser.uid || guide.uid === currentUser.uid);
-    // Show as pinned (with refresh btn) if it's user's row AND not already in pinned section
-    const showAsOwn = isOwn && myRank <= 4;
-    return renderGuideRow(guide, guide.absoluteRank, showAsOwn);
-  }).join('');
+  // Regular list (user's row will appear again in normal position, but without pinned styling)
+  const html = data.map((guide) => renderGuideRow(guide, guide.absoluteRank, false)).join('');
 
   elements.leaderboardBody.innerHTML = pinnedHtml + html;
 
