@@ -9,9 +9,10 @@
 }
 
 /* Header Row */
+/* Column order: Rank | Guide | Lv | Points | Views | Photos | V/P | Reviews */
 .leaderboard__header {
   display: grid;
-  grid-template-columns: 50px 1fr 50px 90px 80px 70px 90px 80px;
+  grid-template-columns: 50px 1fr 50px 90px 90px 80px 70px 80px;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-bg-hover);
@@ -120,9 +121,10 @@
 }
 
 /* Row */
+/* Column order: Rank | Guide | Lv | Points | Views | Photos | V/P | Reviews */
 .leaderboard__row {
   display: grid;
-  grid-template-columns: 50px 1fr 50px 90px 80px 70px 90px 80px;
+  grid-template-columns: 50px 1fr 50px 90px 90px 80px 70px 80px;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-border);

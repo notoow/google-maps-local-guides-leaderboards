@@ -27,7 +27,7 @@ let currentUser = null;
 let isAdmin = false;
 let guides = [];
 let filteredGuides = [];
-let currentSort = { field: 'photoViews', direction: 'desc' };
+let currentSort = { field: 'points', direction: 'desc' };
 let countdownInterval = null;
 
 // DOM Elements
@@ -452,10 +452,10 @@ function renderGuideRow(guide, rank, isPinned = false) {
       <div class="leaderboard__level">
         <span class="level-badge ${levelClass}">${guide.level || 0}</span>
       </div>
+      <div class="leaderboard__points" title="${formatWithCommas(guide.points || 0)}">${formatCompactNumber(guide.points || 0)}</div>
       <div class="leaderboard__photo-views" title="${formatWithCommas(guide.photoViews || 0)}">${formatCompactNumber(guide.photoViews || 0)}</div>
       <div class="leaderboard__photos" title="${formatWithCommas(guide.photoCount || 0)}">${formatCompactNumber(guide.photoCount || 0)}</div>
       <div class="leaderboard__avg-views" title="${formatWithCommas(avgViewsPerPhoto)}">${formatCompactNumber(avgViewsPerPhoto)}</div>
-      <div class="leaderboard__points" title="${formatWithCommas(guide.points || 0)}">${formatCompactNumber(guide.points || 0)}</div>
       <div class="leaderboard__reviews" title="${formatWithCommas(guide.reviewCount || 0)}">${formatCompactNumber(guide.reviewCount || 0)}</div>
     </div>
   `;
