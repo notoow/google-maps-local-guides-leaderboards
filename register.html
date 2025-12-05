@@ -317,6 +317,7 @@
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import {
       doc,
+      getDoc,
       setDoc,
       serverTimestamp
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
@@ -363,6 +364,12 @@
       return patterns.some(pattern => pattern.test(url));
     }
 
+    // Extract contrib ID from URL
+    function extractContribId(url) {
+      const match = url.match(/google\.com\/maps\/contrib\/(\d+)/);
+      return match ? match[1] : null;
+    }
+
     // GitHub Actions 트리거 (본인 데이터만 스크래핑)
     async function triggerScrape(userId) {
       try {
@@ -407,11 +414,27 @@
         return;
       }
 
+      // Extract contrib ID for document ID
+      const contribId = extractContribId(mapsProfileUrl);
+      if (!contribId) {
+        alert('Please use the full Google Maps profile URL (not shortened URL).\n\nExample: https://www.google.com/maps/contrib/123456789...');
+        return;
+      }
+
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
 
       try {
+        // Check if already exists
+        const existingDoc = await getDoc(doc(db, 'guides', contribId));
+        if (existingDoc.exists()) {
+          alert('This profile is already registered!');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Registration';
+          return;
+        }
+
         // Save directly to guides collection with approved status (auto-approve)
         // displayName will be fetched from Google Maps profile by scraper
         const guideData = {
@@ -432,11 +455,11 @@
           updatedAt: serverTimestamp()
         };
 
-        // Use user's UID as document ID
-        await setDoc(doc(db, 'guides', currentUser.uid), guideData);
+        // Use contrib ID as document ID (consistent with Quick Add)
+        await setDoc(doc(db, 'guides', contribId), guideData);
 
         // 가입 완료 후 스크래핑 트리거 (백그라운드)
-        triggerScrape(currentUser.uid);
+        triggerScrape(contribId);
 
         document.getElementById('registerForm').hidden = true;
         document.getElementById('successMessage').hidden = false;
