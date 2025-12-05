@@ -318,7 +318,11 @@
     import {
       doc,
       getDoc,
+      getDocs,
       setDoc,
+      collection,
+      query,
+      where,
       serverTimestamp
     } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
@@ -414,25 +418,46 @@
         return;
       }
 
-      // Extract contrib ID for document ID
-      const contribId = extractContribId(mapsProfileUrl);
-      if (!contribId) {
-        alert('Please use the full Google Maps profile URL (not shortened URL).\n\nExample: https://www.google.com/maps/contrib/123456789...');
-        return;
-      }
-
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
 
       try {
-        // Check if already exists
-        const existingDoc = await getDoc(doc(db, 'guides', contribId));
+        // Extract contrib ID for document ID (null for shortened URLs)
+        let docId = extractContribId(mapsProfileUrl);
+
+        // For shortened URLs, use a temporary ID (will be migrated by scraper)
+        const isShortUrl = mapsProfileUrl.includes('maps.app.goo.gl');
+        if (!docId && isShortUrl) {
+          // Generate temporary ID: short_[timestamp]_[random]
+          docId = `short_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        }
+
+        if (!docId) {
+          alert('Could not process this URL. Please try again.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Registration';
+          return;
+        }
+
+        // Check if already exists (by doc ID)
+        const existingDoc = await getDoc(doc(db, 'guides', docId));
         if (existingDoc.exists()) {
           alert('This profile is already registered!');
           submitBtn.disabled = false;
           submitBtn.textContent = 'Submit Registration';
           return;
+        }
+
+        // For full URLs, also check by mapsProfileUrl field
+        if (!isShortUrl) {
+          const urlQuery = await getDocs(query(collection(db, 'guides'), where('mapsProfileUrl', '==', mapsProfileUrl)));
+          if (!urlQuery.empty) {
+            alert('This profile is already registered!');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Registration';
+            return;
+          }
         }
 
         // Save directly to guides collection with approved status (auto-approve)
@@ -451,15 +476,16 @@
           photoViews: 0,
           reviewCount: 0,
           status: 'approved', // auto-approved → active (after first scrape)
+          isShortUrl: isShortUrl, // Flag for scraper to migrate document ID
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
 
-        // Use contrib ID as document ID (consistent with Quick Add)
-        await setDoc(doc(db, 'guides', contribId), guideData);
+        // Use contrib ID (or temp ID for short URLs) as document ID
+        await setDoc(doc(db, 'guides', docId), guideData);
 
         // 가입 완료 후 스크래핑 트리거 (백그라운드)
-        triggerScrape(contribId);
+        triggerScrape(docId);
 
         document.getElementById('registerForm').hidden = true;
         document.getElementById('successMessage').hidden = false;

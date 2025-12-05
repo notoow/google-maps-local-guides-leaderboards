@@ -151,10 +151,13 @@ async function scrapeSinglePage(page, url, pageName) {
 }
 
 // 가이드 프로필 스크래핑 (photos + reviews 두 페이지)
+// Returns { data, resolvedContribId } - resolvedContribId is set when short URL is resolved
 async function scrapeGuideProfile(page, guide) {
   const originalUrl = guide.mapsProfileUrl;
   const urls = getProfileUrls(originalUrl);
   console.log(`Scraping: ${guide.displayName}`);
+
+  let resolvedContribId = null;
 
   try {
     // 1. /photos 페이지 스크래핑 (사진 수, 조회수)
@@ -165,9 +168,10 @@ async function scrapeGuideProfile(page, guide) {
     let reviewsUrl = urls.reviews;
     if (!reviewsUrl && photosData) {
       const currentUrl = page.url();
-      const contribId = extractContribId(currentUrl);
-      if (contribId) {
-        reviewsUrl = `https://www.google.com/maps/contrib/${contribId}/reviews`;
+      resolvedContribId = extractContribId(currentUrl);
+      if (resolvedContribId) {
+        reviewsUrl = `https://www.google.com/maps/contrib/${resolvedContribId}/reviews`;
+        console.log(`  → Resolved contrib ID: ${resolvedContribId}`);
       }
     }
 
@@ -184,7 +188,7 @@ async function scrapeGuideProfile(page, guide) {
     // 3. 데이터 병합
     if (!photosData && !reviewsData) {
       console.warn(`  Failed to parse profile for ${guide.displayName}`);
-      return null;
+      return { data: null, resolvedContribId: null };
     }
 
     // 두 페이지 데이터 병합 (각 페이지에서 더 나은 값 사용)
@@ -205,13 +209,18 @@ async function scrapeGuideProfile(page, guide) {
       questionsAnswered: photosData?.questionsAnswered || reviewsData?.questionsAnswered || 0
     };
 
+    // Add resolved URL for short URL migration
+    if (resolvedContribId) {
+      mergedData.resolvedMapsProfileUrl = `https://www.google.com/maps/contrib/${resolvedContribId}`;
+    }
+
     console.log(`  ✓ Merged: Level ${mergedData.level}, ${mergedData.points} points, ${mergedData.reviewCount} reviews, ${mergedData.ratingCount} ratings, ${mergedData.photoCount} photos, ${mergedData.photoViews} views`);
 
-    return mergedData;
+    return { data: mergedData, resolvedContribId };
 
   } catch (error) {
     console.error(`Error scraping ${guide.displayName}:`, error.message);
-    return null;
+    return { data: null, resolvedContribId: null };
   }
 }
 
@@ -324,10 +333,37 @@ async function main() {
       // 랜덤 딜레이 (1-3초)
       await page.waitForTimeout(1000 + Math.random() * 2000);
 
-      const profileData = await scrapeGuideProfile(page, guide);
+      const { data: profileData, resolvedContribId } = await scrapeGuideProfile(page, guide);
 
       if (profileData) {
-        await updateGuideData(db, guide.id, guide, profileData);
+        // Check if we need to migrate document (short URL -> contrib ID)
+        const needsMigration = guide.isShortUrl && resolvedContribId && guide.id !== resolvedContribId;
+
+        if (needsMigration) {
+          console.log(`  → Migrating document: ${guide.id} -> ${resolvedContribId}`);
+
+          // Check if target document already exists
+          const targetDoc = await db.collection('guides').doc(resolvedContribId).get();
+          if (targetDoc.exists) {
+            console.log(`  → Target document ${resolvedContribId} already exists, deleting old document`);
+            await db.collection('guides').doc(guide.id).delete();
+          } else {
+            // Create new document with contrib ID, then delete old one
+            const newGuideData = {
+              ...guide,
+              mapsProfileUrl: profileData.resolvedMapsProfileUrl || guide.mapsProfileUrl,
+              isShortUrl: false // No longer a short URL
+            };
+            delete newGuideData.id; // Don't include the old ID in data
+
+            await db.collection('guides').doc(resolvedContribId).set(newGuideData);
+            await updateGuideData(db, resolvedContribId, newGuideData, profileData);
+            await db.collection('guides').doc(guide.id).delete();
+            console.log(`  → Migration complete: ${guide.id} -> ${resolvedContribId}`);
+          }
+        } else {
+          await updateGuideData(db, guide.id, guide, profileData);
+        }
         successCount++;
       } else {
         failCount++;
