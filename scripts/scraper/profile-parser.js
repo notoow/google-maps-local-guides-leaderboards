@@ -15,6 +15,7 @@ export async function parseProfile(page) {
     const data = await page.evaluate(() => {
       const result = {
         displayName: null,
+        avatarUrl: null,
         level: 0,
         points: 0,
         reviewCount: 0,
@@ -34,6 +35,13 @@ export async function parseProfile(page) {
       const nameEl = document.querySelector('h1.geAzIe');
       if (nameEl) {
         result.displayName = nameEl.textContent.trim();
+      }
+
+      // ===== 프로필 사진 추출 =====
+      // img.Iv2Hbb 셀렉터 (프로필 사진)
+      const avatarEl = document.querySelector('img.Iv2Hbb');
+      if (avatarEl && avatarEl.src) {
+        result.avatarUrl = avatarEl.src;
       }
 
       // 숫자 파싱 헬퍼

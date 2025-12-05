@@ -190,6 +190,7 @@ async function scrapeGuideProfile(page, guide) {
     // 두 페이지 데이터 병합 (각 페이지에서 더 나은 값 사용)
     const mergedData = {
       displayName: photosData?.displayName || reviewsData?.displayName || null,
+      avatarUrl: photosData?.avatarUrl || reviewsData?.avatarUrl || null,
       level: photosData?.level || reviewsData?.level || 0,
       points: photosData?.points || reviewsData?.points || 0,
       reviewCount: reviewsData?.reviewCount || photosData?.reviewCount || 0,
@@ -256,6 +257,11 @@ async function updateGuideData(db, guideId, oldData, newData) {
   // displayName이 파싱되었으면 업데이트
   if (newData.displayName) {
     updateData.displayName = newData.displayName;
+  }
+
+  // avatarUrl이 파싱되었으면 업데이트
+  if (newData.avatarUrl) {
+    updateData.avatarUrl = newData.avatarUrl;
   }
 
   await guideRef.update(updateData);
