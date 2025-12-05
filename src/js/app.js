@@ -813,6 +813,35 @@ function extractContribId(url) {
   return match ? match[1] : null;
 }
 
+// Trigger GitHub Actions scraper via Cloudflare Worker proxy
+async function triggerScraper(userId) {
+  try {
+    const response = await fetch(
+      'https://google-localguides-leaderboard-github-action-trigger.antcow0706.workers.dev',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: userId })
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log('Scraper triggered successfully for:', userId);
+      return true;
+    } else {
+      console.error('Failed to trigger scraper');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error triggering scraper:', error);
+    return false;
+  }
+}
+
 // Quick Add Profile (no login required - directly saves to Firestore)
 async function handleQuickAdd() {
   const url = elements.quickAddUrl?.value?.trim();
@@ -885,8 +914,14 @@ async function handleQuickAdd() {
     // Use contrib ID as document ID
     await setDoc(doc(db, 'guides', contribId), guideData);
 
-    showToast('Profile added! Data will be synced shortly.', 'success');
+    showToast('Profile added! Syncing data...', 'success');
     elements.quickAddUrl.value = '';
+
+    // Trigger scraper for this profile
+    const scraperTriggered = await triggerScraper(contribId);
+    if (scraperTriggered) {
+      showToast('Data sync started. Results in ~1 minute.', 'success');
+    }
 
     // Reload leaderboard to show new entry
     await loadLeaderboard();
