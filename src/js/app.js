@@ -430,13 +430,17 @@ function renderGuideRow(guide, rank, isPinned = false) {
     rowClass += ' leaderboard__row--top-3';
   }
 
+  // Avatar class - add syncing spinner for approved status
+  const isSyncing = guide.status === 'approved';
+  const avatarClass = isSyncing ? 'avatar avatar--syncing' : 'avatar';
+
   return `
     <div class="${rowClass}" data-id="${guide.id}" data-name="${guide.displayName}">
       <div class="leaderboard__rank">
         <span class="rank-badge ${rankClass}">${rank}</span>
       </div>
       <div class="leaderboard__user">
-        <div class="avatar">
+        <div class="${avatarClass}">
           ${guide.avatarUrl ? `<img src="${guide.avatarUrl}" alt="">` : initial}
         </div>
         <div class="leaderboard__user-info">

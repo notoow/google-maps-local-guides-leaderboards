@@ -370,6 +370,28 @@
   object-fit: cover;
 }
 
+/* Avatar with syncing spinner */
+.avatar--syncing {
+  position: relative;
+}
+
+.avatar--syncing::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--color-primary);
+  border-right-color: var(--color-primary);
+  animation: avatar-spin 1s linear infinite;
+}
+
+@keyframes avatar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Modal */
 .modal {
   position: fixed;
